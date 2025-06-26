@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 const Question = ({ question, answer, onSelect }) => {
   const options = [
@@ -12,7 +12,6 @@ const Question = ({ question, answer, onSelect }) => {
     <div className="mb-6 bg-white p-6 rounded-lg shadow-sm hover:shadow-md transition-shadow">
       <div className="font-semibold text-purple-600 mb-2">Question {question.id}</div>
       <div className="text-gray-700 mb-4 leading-relaxed">{question.text}</div>
-      
       <div className="flex gap-3 flex-wrap">
         {options.map((option) => (
           <button
@@ -31,3 +30,5 @@ const Question = ({ question, answer, onSelect }) => {
     </div>
   );
 };
+
+export default Question;
