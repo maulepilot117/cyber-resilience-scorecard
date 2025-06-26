@@ -74,9 +74,6 @@ const CyberResilienceScorecard = () => {
           <p className="text-sm mt-2 opacity-80">{answeredQuestions} of {totalQuestions} questions answered</p>
         </div>
         <div className="bg-white rounded-b-2xl shadow-xl p-8">
-          {showResults && (
-            <Results score={score} categoryScores={categoryScores} recommendations={recommendations} />
-          )}
           {scorecardData.categories.map((category) => (
             <Category
               key={category.name}
@@ -85,6 +82,12 @@ const CyberResilienceScorecard = () => {
               onSelectAnswer={selectAnswer}
             />
           ))}
+          {showResults && (
+            <div className="mt-8">
+                <h2 className="text-2xl font-bold mb-4">Your Results</h2>
+                <Results score={score} categoryScores={categoryScores} recommendations={recommendations} />
+            </div>
+          )}
           <div className="text-center mt-8">
             <button
               onClick={calculateScore}
