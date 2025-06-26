@@ -9,6 +9,7 @@ const CyberResilienceScorecard = () => {
   const [score, setScore] = useState(0);
   const [categoryScores, setCategoryScores] = useState({});
   const [recommendations, setRecommendations] = useState([]);
+  const [email, setEmail] = useState(''); // State for email input
 
   const totalQuestions = scorecardData.categories.reduce((sum, cat) => sum + cat.questions.length, 0);
   const answeredQuestions = Object.keys(answers).length;
@@ -19,6 +20,13 @@ const CyberResilienceScorecard = () => {
   };
 
   const calculateScore = () => {
+    // Check if email is provided
+    if (!email) {
+      alert('Please enter your email to receive the results.');
+      return;
+    }
+
+    // Calculate score, category scores, and recommendations
     let totalScore = 0;
     const categoryResults = {};
     const recommendationsList = [];
@@ -36,12 +44,24 @@ const CyberResilienceScorecard = () => {
             break;
           case 'partial':
             categoryScore += weight * 0.5;
-            recommendationsList.push({ category: category.name, question: question.id, text: question.text, status: 'partial', potentialPoints: weight * 0.5 });
+            recommendationsList.push({
+              category: category.name,
+              question: question.id,
+              text: question.text,
+              status: 'partial'
+            });
             break;
           case 'no':
-            recommendationsList.push({ category: category.name, question: question.id, text: question.text, status: 'missing', potentialPoints: weight });
+            recommendationsList.push({
+              category: category.name,
+              question: question.id,
+              text: question.text,
+              status: 'missing'
+            });
             break;
           case 'na':
+            break;
+          default:
             break;
         }
       });
@@ -54,10 +74,46 @@ const CyberResilienceScorecard = () => {
       totalScore += categoryScore;
     });
 
-    setScore(Math.round(totalScore));
+    // Update state to display results
+    const roundedScore = Math.round(totalScore);
+    setScore(roundedScore);
     setCategoryScores(categoryResults);
     setRecommendations(recommendationsList);
     setShowResults(true);
+
+    // Convert categoryScores to array format for backend
+    const categoryScoresArray = Object.entries(categoryResults).map(([name, data]) => ({
+      name,
+      score: data.score,
+      max: data.max,
+      percentage: data.percentage
+    }));
+
+    // Send POST request to backend
+    fetch('http://localhost:3000/generate-pdf', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: email,
+        score: roundedScore,
+        categoryScores: categoryScoresArray,
+        recommendations: recommendationsList
+      }),
+    })
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      console.log(data.message);
+      alert('Results have been emailed to you successfully!');
+    })
+    .catch(error => {
+      console.error('Error sending email:', error);
+      alert('Failed to send email. Please try again later.');
+    });
   };
 
   return (
@@ -74,6 +130,27 @@ const CyberResilienceScorecard = () => {
           <p className="text-sm mt-2 opacity-80">{answeredQuestions} of {totalQuestions} questions answered</p>
         </div>
         <div className="bg-white rounded-b-2xl shadow-xl p-8">
+          {/* Email Input Field */}
+          <div className="mb-6">
+            <label htmlFor="email" className="block text-gray-700 font-medium mb-2">
+              Email for Results
+            </label>
+            <input
+              type="email"
+              id="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="Enter your email"
+            />
+          </div>
+
+          {/* Results Display */}
+          {showResults && (
+            <Results score={score} categoryScores={categoryScores} recommendations={recommendations} />
+          )}
+
+          {/* Categories and Questions */}
           {scorecardData.categories.map((category) => (
             <Category
               key={category.name}
@@ -82,21 +159,16 @@ const CyberResilienceScorecard = () => {
               onSelectAnswer={selectAnswer}
             />
           ))}
-          {showResults && (
-            <div className="mt-8">
-                <h2 className="text-2xl font-bold mb-4">Your Results</h2>
-                <Results score={score} categoryScores={categoryScores} recommendations={recommendations} />
-            </div>
-          )}
+
+          {/* Calculate Score Button */}
           <div className="text-center mt-8">
             <button
               onClick={calculateScore}
-              disabled={answeredQuestions < totalQuestions}
-              className={`px-12 py-4 rounded-xl text-xl font-bold
-                ${answeredQuestions === totalQuestions
+              disabled={answeredQuestions < totalQuestions || !email}
+              className={`px-12 py-4 rounded-xl text-xl font-bold transition-all duration-200
+                ${answeredQuestions === totalQuestions && email
                   ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white hover:shadow-xl'
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`}
             >
               Calculate Score
             </button>

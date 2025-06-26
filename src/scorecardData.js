@@ -39,7 +39,7 @@ export const scorecardData = {
         questions: [
             { id: "3.01", text: ""}
         ]
-    }
+    },
     {
         name: "SaaS",
         icon: "📧",
