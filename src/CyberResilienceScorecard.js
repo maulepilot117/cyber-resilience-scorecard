@@ -145,11 +145,6 @@ const CyberResilienceScorecard = () => {
             />
           </div>
 
-          {/* Results Display */}
-          {showResults && (
-            <Results score={score} categoryScores={categoryScores} recommendations={recommendations} />
-          )}
-
           {/* Categories and Questions */}
           {scorecardData.categories.map((category) => (
             <Category
@@ -159,6 +154,11 @@ const CyberResilienceScorecard = () => {
               onSelectAnswer={selectAnswer}
             />
           ))}
+
+          {/* Results Display */}
+          {showResults && (
+            <Results score={score} categoryScores={categoryScores} recommendations={recommendations} />
+          )}
 
           {/* Calculate Score Button */}
           <div className="text-center mt-8">
