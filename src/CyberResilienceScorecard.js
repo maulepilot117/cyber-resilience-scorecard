@@ -25,6 +25,10 @@ const CyberResilienceScorecard = () => {
   const [animationDirection, setAnimationDirection] = useState('right');
   const [isAnimating, setIsAnimating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [emailError, setEmailError] = useState(false);
+  const [finalScore, setFinalScore] = useState(0);
+  const [categoryResults, setCategoryResults] = useState({});
 
   const allQuestions = getAllQuestions();
   const totalQuestions = allQuestions.length;
@@ -68,11 +72,9 @@ const CyberResilienceScorecard = () => {
   };
 
   const calculateAndSubmitScore = async () => {
-    setIsSubmitting(true);
-    
     let totalScore = 0;
     let totalMax = 0;
-    const categoryResults = {};
+    const categoryResultsData = {};
     const recommendationsList = [];
 
     scorecardData.categories.forEach(category => {
@@ -113,7 +115,7 @@ const CyberResilienceScorecard = () => {
         }
       });
 
-      categoryResults[category.name] = {
+      categoryResultsData[category.name] = {
         score: categoryScore,
         max: categoryMax,
         percentage: categoryMax > 0 ? (categoryScore / categoryMax) * 100 : 0
@@ -122,9 +124,17 @@ const CyberResilienceScorecard = () => {
     });
 
     const normalizedScore = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
-    const finalScore = Math.round(normalizedScore);
+    const calculatedFinalScore = Math.round(normalizedScore);
+    
+    // Set the results data
+    setFinalScore(calculatedFinalScore);
+    setCategoryResults(categoryResultsData);
+    
+    // Show results immediately
+    setShowResults(true);
+    setIsSubmitting(true);
 
-    const categoryScoresArray = Object.entries(categoryResults).map(([name, data]) => ({
+    const categoryScoresArray = Object.entries(categoryResultsData).map(([name, data]) => ({
       name,
       score: data.score,
       max: data.max,
@@ -133,12 +143,13 @@ const CyberResilienceScorecard = () => {
 
     const requestBody = {
       email,
-      score: finalScore,
+      score: calculatedFinalScore,
       categoryScore: categoryScoresArray,
       recommendations: recommendationsList,
       htmlContent: "<h1>Your Report</h1><p>Details here...</p>"
     };
 
+    // Send email in the background
     try {
       const response = await fetch('http://localhost:3000/generate-pdf', {
         method: 'POST',
@@ -152,10 +163,10 @@ const CyberResilienceScorecard = () => {
       const data = await response.json();
       
       console.log(data.message);
-      setShowResults(true);
+      setEmailSent(true);
     } catch (error) {
       console.error('Error sending email:', error);
-      alert('Failed to send email. Please try again later.');
+      setEmailError(true);
     } finally {
       setIsSubmitting(false);
     }
@@ -175,25 +186,119 @@ const CyberResilienceScorecard = () => {
   ];
 
   if (showResults) {
+    const getScoreColor = (score) => {
+      if (score >= 80) return 'text-green-600';
+      if (score >= 60) return 'text-yellow-600';
+      if (score >= 40) return 'text-orange-600';
+      return 'text-red-600';
+    };
+
+    const getScoreGrade = (score) => {
+      if (score >= 80) return 'Excellent';
+      if (score >= 60) return 'Good';
+      if (score >= 40) return 'Fair';
+      return 'Needs Improvement';
+    };
+
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700 p-6 flex items-center justify-center">
-        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8 text-center">
-          <div className="text-6xl mb-4">🎉</div>
-          <h2 className="text-3xl font-bold text-gray-800 mb-4">Assessment Complete!</h2>
-          <p className="text-lg text-gray-600 mb-6">
-            Your Cyber Resilience Scorecard results have been generated and sent to:
-          </p>
-          <p className="text-xl font-semibold text-indigo-600 mb-8">{email}</p>
-          <p className="text-gray-500">
-            Please check your email for the detailed PDF report including your score, 
-            category breakdowns, and personalized recommendations.
-          </p>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-8 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            Start New Assessment
-          </button>
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700 p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+            {/* Score Display */}
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-800 mb-4">Assessment Complete!</h2>
+              <div className="mb-6">
+                <div className={`text-6xl font-bold ${getScoreColor(finalScore)} mb-2`}>
+                  {finalScore}%
+                </div>
+                <div className="text-xl text-gray-600">
+                  Overall Score: <span className="font-semibold">{getScoreGrade(finalScore)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Category Breakdown */}
+            <div className="mb-8">
+              <h3 className="text-xl font-bold text-gray-800 mb-4">Score by Category</h3>
+              <div className="space-y-3">
+                {Object.entries(categoryResults).map(([category, data]) => {
+                  const percentage = Math.round(data.percentage);
+                  return (
+                    <div key={category} className="bg-gray-50 p-4 rounded-lg">
+                      <div className="flex justify-between items-center mb-2">
+                        <span className="font-medium text-gray-700">{category}</span>
+                        <span className="text-sm text-gray-600">
+                          {data.score.toFixed(1)}/{data.max} ({percentage}%)
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className={`h-2 rounded-full transition-all duration-1000 ${
+                            percentage >= 80 ? 'bg-green-500' :
+                            percentage >= 60 ? 'bg-yellow-500' :
+                            percentage >= 40 ? 'bg-orange-500' :
+                            'bg-red-500'
+                          }`}
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Email Status */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+              {isSubmitting ? (
+                <div className="flex items-center justify-center space-x-3">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                  <span className="text-blue-700">Sending your detailed report to {email}...</span>
+                </div>
+              ) : emailSent ? (
+                <div>
+                  <p className="text-green-700 font-semibold mb-2">✅ Report sent successfully!</p>
+                  <p className="text-gray-600">
+                    Your detailed PDF report has been sent to <span className="font-semibold">{email}</span>
+                  </p>
+                </div>
+              ) : emailError ? (
+                <div>
+                  <p className="text-red-700 font-semibold mb-2">⚠️ Unable to send email</p>
+                  <p className="text-gray-600">
+                    We couldn't send your report to {email}. Please contact support or try again later.
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    You can take a screenshot of this page for your records.
+                  </p>
+                </div>
+              ) : (
+                <p className="text-gray-600">Preparing your report...</p>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-8 flex justify-center space-x-4">
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                Start New Assessment
+              </button>
+              {emailError && (
+                <button
+                  onClick={() => {
+                    setEmailError(false);
+                    setEmailSent(false);
+                    calculateAndSubmitScore();
+                  }}
+                  className="px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                >
+                  Retry Email
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     );
