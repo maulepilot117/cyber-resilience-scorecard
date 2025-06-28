@@ -201,7 +201,23 @@ const CyberResilienceScorecard = () => {
     };
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700 p-6">
+      <div className="min-h-screen p-6 relative" style={{
+      background: 'radial-gradient(ellipse at top left, #0a0e27 0%, #1a2b4d 25%, #2d4a6b 50%, #3a5f85 75%, #4682a0 100%)',
+      backgroundSize: '200% 200%',
+      backgroundPosition: '0% 0%'
+    }}>
+      {/* Background image overlay */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: 'url(/background_image.png)',
+          backgroundPosition: 'center 60%',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: '150%',
+          opacity: 1,
+          mixBlendMode: 'screen'
+        }}
+      />
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             {/* Score Display */}
@@ -305,7 +321,23 @@ const CyberResilienceScorecard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-600 to-indigo-700 p-6">
+          <div className="min-h-screen p-6 relative" style={{
+        background: 'radial-gradient(ellipse at top left, #0a0e27 0%, #1a2b4d 25%, #2d4a6b 50%, #3a5f85 75%, #4682a0 100%)',
+        backgroundSize: '200% 200%',
+        backgroundPosition: '0% 0%'
+      }}>
+        {/* Background image overlay */}
+        <div 
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            backgroundImage: 'url(/background_image.png)',
+            backgroundPosition: 'center 60%',
+            backgroundRepeat: 'no-repeat',
+            backgroundSize: '150%',
+            opacity: 1,
+            mixBlendMode: 'screen'
+          }}
+        />
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-white/10 backdrop-blur-md text-white p-6 rounded-2xl shadow-xl mb-6">
