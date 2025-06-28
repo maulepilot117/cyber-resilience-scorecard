@@ -20,20 +20,20 @@ const CyberResilienceScorecard = () => {
   };
 
   const calculateScore = () => {
-    // Check if email is provided
     if (!email) {
       alert('Please enter your email to receive the results.');
       return;
     }
 
-    // Calculate score, category scores, and recommendations
     let totalScore = 0;
+    let totalMax = 0; // Sum of all question weights
     const categoryResults = {};
     const recommendationsList = [];
 
     scorecardData.categories.forEach(category => {
       let categoryScore = 0;
       const categoryMax = category.questions.reduce((sum, q) => sum + q.weight, 0);
+      totalMax += categoryMax; // Add to total maximum score
 
       category.questions.forEach(question => {
         const answer = answers[question.id];
@@ -44,20 +44,10 @@ const CyberResilienceScorecard = () => {
             break;
           case 'partial':
             categoryScore += weight * 0.5;
-            recommendationsList.push({
-              category: category.name,
-              question: question.id,
-              text: question.text,
-              status: 'partial'
-            });
+            recommendationsList.push({ category: category.name, question: question.id, text: question.text, status: 'partial' });
             break;
           case 'no':
-            recommendationsList.push({
-              category: category.name,
-              question: question.id,
-              text: question.text,
-              status: 'missing'
-            });
+            recommendationsList.push({ category: category.name, question: question.id, text: question.text, status: 'missing' });
             break;
           case 'na':
             break;
@@ -74,9 +64,12 @@ const CyberResilienceScorecard = () => {
       totalScore += categoryScore;
     });
 
+    // Normalize the score to be out of 100
+    const normalizedScore = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
+    const finalScore = Math.round(normalizedScore);
+
     // Update state to display results
-    const roundedScore = Math.round(totalScore);
-    setScore(roundedScore);
+    setScore(finalScore);
     setCategoryScores(categoryResults);
     setRecommendations(recommendationsList);
     setShowResults(true);
@@ -89,31 +82,35 @@ const CyberResilienceScorecard = () => {
       percentage: data.percentage
     }));
 
+    const requestBody = JSON.stringify({
+      email,
+      score: finalScore,
+      categoryScore: categoryScoresArray,
+      recommendations: recommendationsList,
+      htmlContent: "<h1>Your Report</h1><p>Details here...</p>"
+    });
+    console.log("Body being sent:", requestBody)
+
     // Send POST request to backend
     fetch('http://localhost:3000/generate-pdf', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        email: email,
-        score: roundedScore,
-        categoryScores: categoryScoresArray,
-        recommendations: recommendationsList
-      }),
+      body: requestBody
     })
-    .then(response => {
-      if (!response.ok) throw new Error('Network response was not ok');
-      return response.json();
-    })
-    .then(data => {
-      console.log(data.message);
-      alert('Results have been emailed to you successfully!');
-    })
-    .catch(error => {
-      console.error('Error sending email:', error);
-      alert('Failed to send email. Please try again later.');
-    });
+      .then(response => {
+        if (!response.ok) throw new Error('Network response was not ok');
+        return response.json();
+      })
+      .then(data => { 
+        console.log(data.message);
+        alert('Results have been emailed to you successfully!');
+      })
+      .catch(error => {
+        console.error('Error sending email:', error);
+        alert('Failed to send email. Please try again later.');
+      });
   };
 
   return (

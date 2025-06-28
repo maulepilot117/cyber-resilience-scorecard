@@ -45,18 +45,31 @@ export const scorecardData = {
         ]
     },
     {
+      name: "Identity",
+      icon: "",
+      questions: [
+            { id: "4.01", text: "Are you protecting all parts of your Active Directory Forest?", weight: 3 },
+            { id: "4.02", text: "Are you protecting data in Microsoft EntraID, not relying on the recycle bin?", weight: 3 },
+            { id: "4.03", text: "Identity protection solution stores data on logically air gapped system, resilient from cyber attack.", weight: 3 },
+            { id: "4.04", text: "Orchestrate recovery of Active Directory Forests.", weight: 3 },
+            { id: "4.05", text: "In addition to Users and Groups, protect Enterprise Applications, Application Registrations and Conditional Access Policies in Microsoft EntraID.", weight: 3 },
+            { id: "4.06", text: "Recover both Active Directory Forest and EntraID Enterprise Apps, App Registrations and Conditional Access Policies.", weight: 3 },
+            { id: "4.07", text: "Compare AD object attritbutes between two snapshots.", weight: 3 },
+            { id: "4.08", text: "Recover AD object attributes to production Active Directory without the need to recover the full forest, domain or object", weight: 3 }
+      ]
+    },
+    {
         name: "Cyber Tools",
         icon: "🔒",
         questions: [
-            { id: "4.01", text: "Ability to detect and alert on active encryption events across all data sources", weight: 4 },
-            { id: "4.02", text: "Detect and alert on encryption events in VM environment", weight: 4 },
-            { id: "4.03", text: "Rapidly hunt for indicators of compromise via YARA rules and file hashes in 60 seconds to identify the clean point of recovery", weight: 4 },
-            { id: "4.04", text: "Proactively scan and alert on known indicators of compromise from an industry standard list of signatures, alerting customers to threats within their environment before the attack occurs", weight: 4 },
-            { id: "4.05", text: "Add custom YARA rules or file hashes to the scanning engine and scan for those IOCs on every backup", weight: 3 },
-            { id: "4.06", text: "Scan all data sources for sensitive data with 60 built-in scanners", weight: 3 },
-            { id: "4.07", text: "Build custom scanners based off dictionary words or patterns and identify all data that matches across all data sources", weight: 3 }
+            { id: "5.01", text: "Ability to detect and alert on active encryption events across all data sources", weight: 4 },
+            { id: "5.02", text: "Detect and alert on encryption events in VM environment", weight: 4 },
+            { id: "5.03", text: "Rapidly hunt for indicators of compromise via YARA rules and file hashes in 60 seconds to identify the clean point of recovery", weight: 4 },
+            { id: "5.04", text: "Proactively scan and alert on known indicators of compromise from an industry standard list of signatures, alerting customers to threats within their environment before the attack occurs", weight: 4 },
+            { id: "5.05", text: "Add custom YARA rules or file hashes to the scanning engine and scan for those IOCs on every backup", weight: 3 },
+            { id: "5.06", text: "Scan all data sources for sensitive data with 60 built-in scanners", weight: 3 },
+            { id: "5.07", text: "Build custom scanners based off dictionary words or patterns and identify all data that matches across all data sources", weight: 3 }
         ]
     }
-    // Other categories (SaaS, Cyber Tools) follow the same structure
   ]
 };
