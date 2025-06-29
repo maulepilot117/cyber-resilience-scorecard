@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+  # Frontend React Application
+  frontend:
+    image: maulepilot117/cyber-resilience-scorecard:latest
+    container_name: cyber-scorecard-frontend
+    ports:
+      - "8080:80" # Maps host port 8080 to container port 80
+    depends_on:
+      - backend
+    environment:
+      # Add the backend API URL so the frontend knows where to make requests
+      # Adjust this based on how your React app is configured
+      REACT_APP_API_URL: http://localhost:3000
+    restart: unless-stopped
+    networks:
+      - cyber-scorecard-network
+
+  # Backend Go API
+  backend:
+    image: maulepilot117/cyber-scorecard-backend:latest
+    container_name: cyber-scorecard-backend
+    ports:
+      - "3000:3000" # Maps host port 3000 to container port 3000
+    environment:
+      # SMTP Configuration
+      SMTP_HOST: smtp.mailersend.net
+      SMTP_PORT: 587
+      SMTP_USER: MS_F2pHKB@stwlfrm.monster
+      FROM_EMAIL: cwhite@stwlfrm.monster
+      # Optional: Port configuration
+      PORT: 3000
+    volumes:
+      # Mount PDF output directory to persist generated PDFs
+      - ./pdf_output:/app/pdf_output
+    restart: unless-stopped
+    networks:
+      - cyber-scorecard-network
+
+networks:
+  cyber-scorecard-network:
+    driver: bridge
