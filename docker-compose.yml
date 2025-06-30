@@ -24,16 +24,21 @@ services:
     ports:
       - "3000:3000" # Maps host port 3000 to container port 3000
     environment:
-      # SMTP Configuration
+      # Non-sensitive SMTP Configuration
       SMTP_HOST: smtp.mailersend.net
       SMTP_PORT: 587
-      SMTP_USER: MS_F2pHKB@stwlfrm.monster
       FROM_EMAIL: cwhite@stwlfrm.monster
-      # Optional: Port configuration
+      # Port configuration
       PORT: 3000
+      # Secret file paths - these tell the app where to find the secrets
+      SMTP_USER_FILE: /run/secrets/smtp_user
+      SMTP_PASS_FILE: /run/secrets/smtp_pass
     volumes:
       # Mount PDF output directory to persist generated PDFs
       - ./pdf_output:/app/pdf_output
+      # Mount secrets as read-only files
+      - ./secrets/smtp_user:/run/secrets/smtp_user:ro
+      - ./secrets/smtp_pass:/run/secrets/smtp_pass:ro
     restart: unless-stopped
     networks:
       - cyber-scorecard-network
