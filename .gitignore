@@ -58,5 +58,5 @@ Temporary Items
 *.icloud
 
 secrets/
-# End of https://www.toptal.com/developers/gitignore/api/macos,go
 secrets.zip
+pdf_output/
