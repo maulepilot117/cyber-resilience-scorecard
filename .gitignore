@@ -57,4 +57,5 @@ Temporary Items
 # iCloud generated files
 *.icloud
 
+secrets/
 # End of https://www.toptal.com/developers/gitignore/api/macos,go
