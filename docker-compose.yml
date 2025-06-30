@@ -25,7 +25,7 @@ services:
       - "3000:3000" # Maps host port 3000 to container port 3000
     environment:
       # Non-sensitive SMTP Configuration
-      SMTP_HOST: smtp.mailersend.net
+      SMTP_HOST: smtp.protonmail.ch
       SMTP_PORT: 587
       FROM_EMAIL: cwhite@stwlfrm.monster
       # Port configuration
