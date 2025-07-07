@@ -73,12 +73,13 @@ const getAllQuestions = (selectedSubCategories = null) => {
 
 const CyberResilienceScorecard = () => {
   const [currentStep, setCurrentStep] = useState(-3); // -3 intro, -2 categories, -1 email, 0+ questions
+  const [previousStep, setPreviousStep] = useState(null);
   const [email, setEmail] = useState('');
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState({});
   const [answers, setAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
-  const [animationDirection, setAnimationDirection] = useState('right');
+  const [animationDirection, setAnimationDirection] = useState('forward');
   const [isAnimating, setIsAnimating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
@@ -240,12 +241,16 @@ const CyberResilienceScorecard = () => {
   const navigateToStep = (newStep) => {
     if (newStep === currentStep) return;
     
-    setAnimationDirection(newStep > currentStep ? 'right' : 'left');
+    setPreviousStep(currentStep);
+    setAnimationDirection(newStep > currentStep ? 'forward' : 'backward');
     setIsAnimating(true);
     
     setTimeout(() => {
       setCurrentStep(newStep);
-      setIsAnimating(false);
+      setTimeout(() => {
+        setIsAnimating(false);
+        setPreviousStep(null);
+      }, 50);
     }, 300);
   };
 
@@ -609,7 +614,7 @@ const CyberResilienceScorecard = () => {
             <div 
               className={`absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ${
                 isAnimating 
-                  ? animationDirection === 'right' ? '-translate-x-full opacity-0' : 'translate-x-full opacity-0'
+                  ? animationDirection === 'forward' ? '-translate-x-full opacity-0' : 'translate-x-full opacity-0'
                   : 'translate-x-0 opacity-100'
               }`}
             >
@@ -636,7 +641,7 @@ const CyberResilienceScorecard = () => {
             <div 
               className={`absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ${
                 isAnimating 
-                  ? animationDirection === 'right' ? '-translate-x-full opacity-0' : 'translate-x-full opacity-0'
+                  ? animationDirection === 'forward' ? '-translate-x-full opacity-0' : 'translate-x-full opacity-0'
                   : 'translate-x-0 opacity-100'
               }`}
             >
@@ -789,7 +794,7 @@ const CyberResilienceScorecard = () => {
             <div 
               className={`absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ${
                 isAnimating 
-                  ? animationDirection === 'right' ? '-translate-x-full opacity-0' : 'translate-x-full opacity-0'
+                  ? animationDirection === 'forward' ? '-translate-x-full opacity-0' : 'translate-x-full opacity-0'
                   : 'translate-x-0 opacity-100'
               }`}
             >
@@ -827,73 +832,98 @@ const CyberResilienceScorecard = () => {
           )}
 
           {/* Question Steps */}
-          {currentStep >= 0 && currentQuestion && (
-            <div 
-              key={currentStep}
-              className={`absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ${
-                isAnimating 
-                  ? animationDirection === 'right' ? 'translate-x-full opacity-0' : '-translate-x-full opacity-0'
-                  : 'translate-x-0 opacity-100'
-              }`}
-            >
-              <div className="h-full flex flex-col">
-                {/* Category Header */}
-                <div className="mb-6">
-                  <div className="flex items-center gap-2 text-indigo-600 mb-1">
-                    <span className="text-2xl">{currentQuestion.categoryIcon}</span>
-                    <span className="font-semibold">{currentQuestion.category}</span>
+          {currentStep >= 0 && allQuestions.map((question, index) => {
+            const isCurrentQuestion = index === currentStep;
+            const isPreviousQuestion = index === previousStep;
+            
+            // Only render current and previous questions during animation
+            if (!isCurrentQuestion && !isPreviousQuestion && isAnimating) return null;
+            if (!isCurrentQuestion && !isAnimating) return null;
+            
+            return (
+              <div 
+                key={`question-${index}`}
+                className={`absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ease-in-out ${
+                  isAnimating
+                    ? isPreviousQuestion
+                      ? animationDirection === 'forward' 
+                        ? '-translate-x-full opacity-0' 
+                        : 'translate-x-full opacity-0'
+                      : isCurrentQuestion
+                        ? animationDirection === 'forward'
+                          ? 'translate-x-0 opacity-100'
+                          : 'translate-x-0 opacity-100'
+                        : ''
+                    : isCurrentQuestion
+                      ? 'translate-x-0 opacity-100'
+                      : animationDirection === 'forward'
+                        ? 'translate-x-full opacity-0'
+                        : '-translate-x-full opacity-0'
+                }`}
+                style={{
+                  transform: isAnimating && !isPreviousQuestion && !isCurrentQuestion ? 
+                    (animationDirection === 'forward' ? 'translateX(100%)' : 'translateX(-100%)') : undefined
+                }}
+              >
+                <div className="h-full flex flex-col">
+                  {/* Category Header */}
+                  <div className="mb-6">
+                    <div className="flex items-center gap-2 text-indigo-600 mb-1">
+                      <span className="text-2xl">{question.categoryIcon}</span>
+                      <span className="font-semibold">{question.category}</span>
+                    </div>
+                    {question.subCategory ? (
+                      <div className="text-sm text-gray-600 ml-10">{question.subCategory}</div>
+                    ) : (
+                      <div className="text-sm text-gray-600 ml-10 font-medium">General {question.category} Question</div>
+                    )}
+                    <div className="text-sm text-gray-500 ml-10">Question {question.id}</div>
                   </div>
-                  {currentQuestion.subCategory ? (
-                    <div className="text-sm text-gray-600 ml-10">{currentQuestion.subCategory}</div>
-                  ) : (
-                    <div className="text-sm text-gray-600 ml-10 font-medium">General {currentQuestion.category} Question</div>
-                  )}
-                  <div className="text-sm text-gray-500 ml-10">Question {currentQuestion.id}</div>
-                </div>
 
-                {/* Question Text */}
-                <div className="flex-1 flex items-center justify-center">
-                  <h3 className="text-2xl text-gray-800 text-center leading-relaxed max-w-3xl">
-                    {currentQuestion.text}
-                  </h3>
-                </div>
+                  {/* Question Text */}
+                  <div className="flex-1 flex items-center justify-center">
+                    <h3 className="text-2xl text-gray-800 text-center leading-relaxed max-w-3xl">
+                      {question.text}
+                    </h3>
+                  </div>
 
-                {/* Answer Options */}
-                <div className="grid grid-cols-2 gap-4 mt-8">
-                  {answerOptions.map((option) => (
+                  {/* Answer Options */}
+                  <div className="grid grid-cols-2 gap-4 mt-8">
+                    {answerOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleAnswer(option.value)}
+                        className={`${option.className} py-6 px-8 rounded-xl text-xl font-semibold transition-all transform hover:scale-105 flex items-center justify-center gap-3`}
+                      >
+                        <span className="text-2xl">{option.icon}</span>
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Navigation */}
+                  <div className="mt-8 flex justify-between items-center">
                     <button
-                      key={option.value}
-                      onClick={() => handleAnswer(option.value)}
-                      className={`${option.className} py-6 px-8 rounded-xl text-xl font-semibold transition-all transform hover:scale-105 flex items-center justify-center gap-3`}
+                      onClick={goBack}
+                      disabled={currentStep <= -3}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        currentStep > -3 
+                          ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100' 
+                          : 'text-gray-400 cursor-not-allowed'
+                      }`}
                     >
-                      <span className="text-2xl">{option.icon}</span>
-                      {option.label}
+                      <ChevronLeft className="w-5 h-5" />
+                      Back
                     </button>
-                  ))}
-                </div>
-
-                {/* Navigation */}
-                <div className="mt-8 flex justify-between items-center">
-                  <button
-                    onClick={goBack}
-                    disabled={currentStep <= -3}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                      currentStep > -3 
-                        ? 'text-gray-600 hover:text-gray-800 hover:bg-gray-100' 
-                        : 'text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                    Back
-                  </button>
-                  
-                  <div className="text-gray-500">
-                    {Object.keys(answers).filter(id => allQuestions.find(q => q.id === id)).length} answers completed
+                    
+                    <div className="text-gray-500">
+                      {Object.keys(answers).filter(id => allQuestions.find(q => q.id === id)).length} answers completed
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            );
+          })}
 
           {/* Loading State */}
           {isSubmitting && (
