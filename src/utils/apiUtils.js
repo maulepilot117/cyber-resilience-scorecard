@@ -1,5 +1,6 @@
 /**
  * Utility functions for API requests with comprehensive error handling
+ * Optimized for hackathon demo with reduced retries
  */
 
 /**
@@ -16,12 +17,13 @@ export class ApiError extends Error {
 
 /**
  * Configuration for API requests
+ * Reduced retries and timeout for faster demo feedback
  */
 const API_CONFIG = {
   BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:3000',
-  TIMEOUT: 30000, // 30 seconds
-  RETRIES: 3,
-  RETRY_DELAY: 1000, // 1 second
+  TIMEOUT: 10000, // Reduced from 30s to 10s for demos
+  RETRIES: 1, // Reduced from 3 to 1 for faster feedback
+  RETRY_DELAY: 500, // Reduced from 1000ms to 500ms
 };
 
 /**
@@ -110,7 +112,7 @@ const handleFetchError = (error, endpoint) => {
 
   if (error.name === 'TypeError' && error.message.includes('fetch')) {
     return new ApiError(
-      'Network error: Unable to connect to the server. Please check your internet connection.',
+      'Network error: Unable to connect to the server. Please check if the backend is running.',
       0,
       null
     );
@@ -221,10 +223,10 @@ export const apiRequest = async (config) => {
   const url = createUrl(endpoint);
   let lastError = null;
 
-  // Retry logic
+  // Retry logic (reduced for demo)
   for (let attempt = 1; attempt <= API_CONFIG.RETRIES; attempt++) {
     try {
-      console.log(`API Request attempt ${attempt}/${API_CONFIG.RETRIES}: ${method} ${url}`);
+      console.log(`API Request: ${method} ${url}`);
 
       // Prepare request options
       const requestOptions = {
@@ -251,7 +253,7 @@ export const apiRequest = async (config) => {
 
     } catch (error) {
       lastError = error;
-      console.warn(`API Request attempt ${attempt} failed:`, error.message);
+      console.warn(`API Request failed:`, error.message);
 
       // Don't retry on client errors (4xx) except 408 (timeout), 429 (rate limit)
       if (error.status && error.status >= 400 && error.status < 500 && error.status !== 408 && error.status !== 429) {
@@ -264,9 +266,9 @@ export const apiRequest = async (config) => {
         break;
       }
 
-      // Wait before retrying
-      console.log(`Waiting ${API_CONFIG.RETRY_DELAY}ms before retry...`);
-      await sleep(API_CONFIG.RETRY_DELAY * attempt); // Exponential backoff
+      // Wait before retrying (shorter delay for demo)
+      console.log(`Retrying in ${API_CONFIG.RETRY_DELAY}ms...`);
+      await sleep(API_CONFIG.RETRY_DELAY);
     }
   }
 
@@ -275,7 +277,7 @@ export const apiRequest = async (config) => {
     ? lastError
     : handleFetchError(lastError, endpoint);
 
-  console.error('All API request attempts failed');
+  console.error('API request failed');
   throw finalError;
 };
 

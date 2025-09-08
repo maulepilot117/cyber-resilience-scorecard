@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -8,6 +8,8 @@ import {
   ChevronDown,
   ChevronUp,
   AlertTriangle,
+  Download,
+  Zap,
 } from "lucide-react";
 import { scorecardData } from "./scorecardData";
 import {
@@ -19,12 +21,23 @@ import {
 import { postData, ApiError } from "./utils/apiUtils";
 import ErrorBoundary from "./ErrorBoundary";
 
+// Extracted styles to constants for better performance
+const BACKGROUND_STYLE = {
+  background:
+    "radial-gradient(ellipse at top left, #0a0e27 0%, #1a2b4d 25%, #2d4a6b 50%, #3a5f85 75%, #4682a0 100%)",
+  backgroundSize: "200% 200%",
+  backgroundPosition: "0% 0%",
+};
+
+// Demo mode for hackathon presentations
+const DEMO_MODE = window.location.search.includes('demo=true');
+const DEMO_EMAIL = 'demo@cyberresilience.com';
+
 // Flatten all questions into a single array with category and sub-category info
 const getAllQuestions = (selectedSubCategories = null) => {
   const questions = [];
-  const processedCategories = new Set(); // Track which category-level questions we've added
+  const processedCategories = new Set();
 
-  // Ensure scorecardData exists and has categories
   if (
     !scorecardData ||
     !scorecardData.categories ||
@@ -34,21 +47,18 @@ const getAllQuestions = (selectedSubCategories = null) => {
   }
 
   scorecardData.categories.forEach((category) => {
-    // Check if any sub-categories from this category are selected
     const categoryHasSelectedSubCategories =
       selectedSubCategories &&
       selectedSubCategories.some((key) => key.startsWith(`${category.name}:`));
 
-    // If no selection made yet, or if this category has selected sub-categories,
-    // include the category-level questions
-    if (!selectedSubCategories || categoryHasSelectedSubCategories) {
+    // Always include Backup Architecture questions, or include if category has selected subcategories
+    if (category.name === "Backup Architecture" || !selectedSubCategories || categoryHasSelectedSubCategories) {
       if (
         !processedCategories.has(category.name) &&
         category.questions &&
         category.questions.length > 0
       ) {
         category.questions.forEach((question) => {
-          // Validate question object before adding
           if (
             question &&
             typeof question === "object" &&
@@ -58,21 +68,15 @@ const getAllQuestions = (selectedSubCategories = null) => {
             questions.push({
               ...question,
               category: category.name,
-              subCategory: null, // Category-level questions don't have a sub-category
+              subCategory: null,
               categoryIcon: category.icon || "❓",
             });
-          } else {
-            console.warn(
-              `Malformed question in category ${category.name}:`,
-              question,
-            );
           }
         });
         processedCategories.add(category.name);
       }
     }
 
-    // Process sub-categories if they exist
     if (category.subCategories && Array.isArray(category.subCategories)) {
       category.subCategories.forEach((subCategory) => {
         const subCategoryKey = `${category.name}:${subCategory.name}`;
@@ -82,7 +86,6 @@ const getAllQuestions = (selectedSubCategories = null) => {
         ) {
           if (subCategory.questions && Array.isArray(subCategory.questions)) {
             subCategory.questions.forEach((question) => {
-              // Validate question object before adding
               if (
                 question &&
                 typeof question === "object" &&
@@ -95,11 +98,6 @@ const getAllQuestions = (selectedSubCategories = null) => {
                   subCategory: subCategory.name,
                   categoryIcon: category.icon || "❓",
                 });
-              } else {
-                console.warn(
-                  `Malformed question in subcategory ${category.name}:${subCategory.name}:`,
-                  question,
-                );
               }
             });
           }
@@ -108,101 +106,128 @@ const getAllQuestions = (selectedSubCategories = null) => {
     }
   });
 
-  // Sort questions so category-level questions appear first
   return questions.sort((a, b) => {
-    // First sort by category
     if (a.category !== b.category) {
       return a.category.localeCompare(b.category);
     }
-    // Within same category, category-level questions come first
     if (!a.subCategory && b.subCategory) return -1;
     if (a.subCategory && !b.subCategory) return 1;
-    // Then sort by sub-category if both have one
     if (a.subCategory && b.subCategory && a.subCategory !== b.subCategory) {
       return a.subCategory.localeCompare(b.subCategory);
     }
-    // Finally sort by question ID
     return a.id.localeCompare(b.id);
   });
 };
 
 const CyberResilienceScorecard = () => {
-  const [currentStep, setCurrentStep] = useState(-3); // -3 intro, -2 categories, -1 email, 0+ questions
-  const [previousStep, setPreviousStep] = useState(null);
-  const [email, setEmail] = useState("");
+  const [currentStep, setCurrentStep] = useState(-3);
+  const [email, setEmail] = useState(DEMO_MODE ? DEMO_EMAIL : "");
   const [selectedSubCategories, setSelectedSubCategories] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState({});
   const [answers, setAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
-  const [animationDirection, setAnimationDirection] = useState("forward");
-  const [isAnimating, setIsAnimating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const [emailError, setEmailError] = useState(null);
   const [finalScore, setFinalScore] = useState(0);
+  const [animatedScore, setAnimatedScore] = useState(0);
   const [categoryResults, setCategoryResults] = useState({});
+  const [startTime] = useState(Date.now());
+  const [completionTime, setCompletionTime] = useState(null);
 
-  // Temporarily disable strict validation for debugging
-  const dataValidation = validateScorecardData(scorecardData);
-  if (dataValidation.warnings.length > 0) {
-    console.warn("Scorecard data warnings:", dataValidation.warnings);
-  }
-
-  // Only log errors, don't prevent loading
-  if (!dataValidation.isValid) {
-    console.error("Invalid scorecard data structure:", dataValidation.errors);
-  }
-
-  // Validate data structure
-  const hasInvalidCategories = scorecardData.categories.some((cat) => {
-    if (!cat || typeof cat !== "object") {
-      console.error("Invalid category:", cat);
-      return true;
-    }
-    if (!cat.name || !cat.icon) {
-      console.error("Category missing name or icon:", cat);
-      return true;
-    }
-    return false;
-  });
-
-  if (hasInvalidCategories) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">
-          Error: Invalid category data structure. Please check the console.
-        </div>
-      </div>
-    );
-  }
-
-  // Normalize the data structure to ensure all categories have subCategories
-  React.useEffect(() => {
-    if (scorecardData && scorecardData.categories) {
-      scorecardData.categories.forEach((category) => {
-        if (!category.subCategories) {
-          category.subCategories = [];
-        }
-        if (!category.questions) {
-          category.questions = [];
-        }
-      });
-    }
-  }, []);
-
-  const allQuestions = getAllQuestions(
-    selectedSubCategories.length > 0 ? selectedSubCategories : null,
+  // Memoize expensive calculations
+  const allQuestions = useMemo(
+    () => getAllQuestions(selectedSubCategories.length > 0 ? selectedSubCategories : null),
+    [selectedSubCategories]
   );
+
   const totalQuestions = allQuestions.length;
   const currentQuestion = currentStep >= 0 ? allQuestions[currentStep] : null;
+  const answeredCount = Object.keys(answers).filter((id) =>
+    allQuestions.find((q) => q.id === id)
+  ).length;
 
-  // Calculate progress including intro steps
-  const totalSteps = totalQuestions + 3; // intro + categories + email + questions
+  // Calculate progress
+  const totalSteps = totalQuestions + 3;
   const currentStepForProgress = currentStep + 3;
   const progressPercent = (currentStepForProgress / totalSteps) * 100;
 
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyPress = (e) => {
+      if (showResults) return;
+      
+      if (e.key === 'ArrowLeft' && currentStep > -3) {
+        goBack();
+      } else if (e.key === 'ArrowRight') {
+        if (currentStep === -3) {
+          handleContinueFromIntro();
+        } else if (currentStep === -2 && selectedSubCategories.length > 0) {
+          handleCategoriesSubmit();
+        } else if (currentStep === -1 && email) {
+          handleEmailSubmit();
+        }
+      }
+      
+      // Quick answer with number keys (1-4)
+      if (currentStep >= 0 && ['1', '2', '3', '4'].includes(e.key)) {
+        const answerMap = { '1': 'yes', '2': 'partial', '3': 'no', '4': 'na' };
+        handleAnswer(answerMap[e.key]);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, [currentStep, selectedSubCategories, email, showResults]);
+
+  // Animate score on results
+  useEffect(() => {
+    if (showResults && finalScore > 0) {
+      const duration = 2000; // 2 seconds
+      const steps = 60;
+      const increment = finalScore / steps;
+      let current = 0;
+      
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= finalScore) {
+          setAnimatedScore(finalScore);
+          clearInterval(timer);
+        } else {
+          setAnimatedScore(Math.floor(current));
+        }
+      }, duration / steps);
+      
+      return () => clearInterval(timer);
+    }
+  }, [showResults, finalScore]);
+
+  // Demo mode: Auto-fill random answers
+  const fillDemoAnswers = useCallback(() => {
+    if (!DEMO_MODE) return;
+    
+    const demoAnswers = {};
+    const answerOptions = ['yes', 'partial', 'no', 'na'];
+    const weights = [0.6, 0.25, 0.1, 0.05]; // Weighted towards positive answers for demo
+    
+    allQuestions.forEach(question => {
+      const random = Math.random();
+      let cumulative = 0;
+      for (let i = 0; i < weights.length; i++) {
+        cumulative += weights[i];
+        if (random < cumulative) {
+          demoAnswers[question.id] = answerOptions[i];
+          break;
+        }
+      }
+    });
+    
+    setAnswers(demoAnswers);
+    calculateAndSubmitScore();
+  }, [allQuestions]);
+
   const handleContinueFromIntro = () => {
-    navigateToStep(-2);
+    setCurrentStep(-2);
   };
 
   const toggleCategoryExpansion = (categoryName) => {
@@ -228,28 +253,21 @@ const CyberResilienceScorecard = () => {
       const category = scorecardData.categories.find(
         (cat) => cat.name === categoryName,
       );
-      if (
-        !category ||
-        !category.subCategories ||
-        !Array.isArray(category.subCategories)
-      )
-        return;
+      if (!category || !category.subCategories) return;
 
-      const categorySubCategoryKeys = category.subCategories.map(
-        (subCat) => `${categoryName}:${subCat.name}`,
-      );
+      const categorySubCategoryKeys = category.subCategories
+        .filter(sc => sc.questions && sc.questions.length > 0) // Only include non-empty subcategories
+        .map((subCat) => `${categoryName}:${subCat.name}`);
 
       const allSelected = categorySubCategoryKeys.every((key) =>
         selectedSubCategories.includes(key),
       );
 
       if (allSelected) {
-        // Deselect all
         setSelectedSubCategories((prev) =>
           prev.filter((key) => !categorySubCategoryKeys.includes(key)),
         );
       } else {
-        // Select all
         setSelectedSubCategories((prev) => [
           ...prev.filter((key) => !categorySubCategoryKeys.includes(key)),
           ...categorySubCategoryKeys,
@@ -266,9 +284,9 @@ const CyberResilienceScorecard = () => {
     );
     if (!category || !category.subCategories) return "none";
 
-    const categorySubCategoryKeys = category.subCategories.map(
-      (subCat) => `${categoryName}:${subCat.name}`,
-    );
+    const categorySubCategoryKeys = category.subCategories
+      .filter(sc => sc.questions && sc.questions.length > 0)
+      .map((subCat) => `${categoryName}:${subCat.name}`);
 
     const selectedCount = categorySubCategoryKeys.filter((key) =>
       selectedSubCategories.includes(key),
@@ -284,7 +302,7 @@ const CyberResilienceScorecard = () => {
       alert("Please select at least one sub-category to assess");
       return;
     }
-    navigateToStep(-1);
+    setCurrentStep(-1);
   };
 
   const handleEmailSubmit = () => {
@@ -295,14 +313,21 @@ const CyberResilienceScorecard = () => {
       return;
     }
 
-    // Update with sanitized email
     setEmail(emailValidation.sanitized);
-    navigateToStep(0);
+    
+    if (DEMO_MODE) {
+      // In demo mode, show a quick fill option
+      if (confirm("Demo Mode: Would you like to auto-fill sample answers for a quick demo?")) {
+        fillDemoAnswers();
+        return;
+      }
+    }
+    
+    setCurrentStep(0);
   };
 
   const handleAnswer = (answer) => {
     if (currentQuestion) {
-      // Validate the answer
       const answerValidation = validateAnswer(answer);
       if (!answerValidation.isValid) {
         console.error("Invalid answer:", answerValidation.errors);
@@ -314,75 +339,53 @@ const CyberResilienceScorecard = () => {
         [currentQuestion.id]: answerValidation.sanitized,
       }));
 
-      // Auto-advance to next question after a short delay
       setTimeout(() => {
         if (currentStep < totalQuestions - 1) {
-          navigateToStep(currentStep + 1);
+          setCurrentStep(currentStep + 1);
         } else {
-          // All questions answered, calculate results
           calculateAndSubmitScore();
         }
-      }, 300);
+      }, 200); // Reduced delay for snappier feel
     }
   };
 
-  const navigateToStep = (newStep) => {
-    if (newStep === currentStep) return;
-
-    setPreviousStep(currentStep);
-    setAnimationDirection(newStep > currentStep ? "forward" : "backward");
-    setIsAnimating(true);
-
-    setTimeout(() => {
-      setCurrentStep(newStep);
-      setTimeout(() => {
-        setIsAnimating(false);
-        setPreviousStep(null);
-      }, 50);
-    }, 300);
+  const goBack = () => {
+    if (currentStep > -3) {
+      setCurrentStep(currentStep - 1);
+    }
   };
 
   const calculateAndSubmitScore = async () => {
+    // Calculate completion time
+    const endTime = Date.now();
+    const timeTaken = Math.floor((endTime - startTime) / 1000); // in seconds
+    setCompletionTime(timeTaken);
+
     let totalScore = 0;
     let totalMax = 0;
     const categoryResultsData = {};
     const recommendationsList = [];
 
-    // Process only selected sub-categories and their parent category questions
     scorecardData.categories.forEach((category) => {
       let categoryScore = 0;
       let categoryMax = 0;
 
-      // Validate category structure
       if (!category || typeof category !== "object" || !category.name) {
-        console.error("Malformed category:", category);
         return;
       }
 
-      // Check if any sub-categories from this category are selected
       const categoryHasSelectedSubCategories = selectedSubCategories.some(
         (key) => key.startsWith(`${category.name}:`),
       );
 
-      // Process category-level questions if any sub-category is selected
-      if (categoryHasSelectedSubCategories && category.questions) {
+      // Always include Backup Architecture in scoring, or include if category has selected subcategories
+      if ((category.name === "Backup Architecture" || categoryHasSelectedSubCategories) && category.questions) {
         if (Array.isArray(category.questions)) {
-          category.questions.forEach((question, index) => {
-            if (
-              !question ||
-              typeof question !== "object" ||
-              !question.id ||
-              !question.text
-            ) {
-              console.warn(
-                `Malformed question at index ${index} in category ${category.name}:`,
-                question,
-              );
-              return;
-            }
+          category.questions.forEach((question) => {
+            if (!question || !question.id || !question.text) return;
+            
             const answer = answers[question.id];
-            const weight =
-              typeof question.weight === "number" ? question.weight : 1; // Default weight
+            const weight = typeof question.weight === "number" ? question.weight : 1;
             categoryMax += weight;
 
             switch (answer) {
@@ -397,6 +400,7 @@ const CyberResilienceScorecard = () => {
                   question: question.id,
                   text: question.text,
                   status: "partial",
+                  potentialPoints: weight * 0.5,
                 });
                 break;
               case "no":
@@ -406,44 +410,27 @@ const CyberResilienceScorecard = () => {
                   question: question.id,
                   text: question.text,
                   status: "missing",
+                  potentialPoints: weight,
                 });
                 break;
               case "na":
-                // Exclude N/A from calculations
                 categoryMax -= weight;
-                break;
-              default:
-                console.warn(
-                  `Unexpected answer for question ${question.id}: ${answer}`,
-                );
                 break;
             }
           });
         }
       }
 
-      // Process sub-category questions
       if (category.subCategories && Array.isArray(category.subCategories)) {
         category.subCategories.forEach((subCategory) => {
           const subCategoryKey = `${category.name}:${subCategory.name}`;
           if (selectedSubCategories.includes(subCategoryKey)) {
             if (subCategory.questions && Array.isArray(subCategory.questions)) {
-              subCategory.questions.forEach((question, index) => {
-                if (
-                  !question ||
-                  typeof question !== "object" ||
-                  !question.id ||
-                  !question.text
-                ) {
-                  console.warn(
-                    `Malformed question at index ${index} in subcategory ${category.name}:${subCategory.name}:`,
-                    question,
-                  );
-                  return;
-                }
+              subCategory.questions.forEach((question) => {
+                if (!question || !question.id || !question.text) return;
+                
                 const answer = answers[question.id];
-                const weight =
-                  typeof question.weight === "number" ? question.weight : 1; // Default weight
+                const weight = typeof question.weight === "number" ? question.weight : 1;
                 categoryMax += weight;
 
                 switch (answer) {
@@ -458,6 +445,7 @@ const CyberResilienceScorecard = () => {
                       question: question.id,
                       text: question.text,
                       status: "partial",
+                      potentialPoints: weight * 0.5,
                     });
                     break;
                   case "no":
@@ -467,16 +455,11 @@ const CyberResilienceScorecard = () => {
                       question: question.id,
                       text: question.text,
                       status: "missing",
+                      potentialPoints: weight,
                     });
                     break;
                   case "na":
-                    // Exclude N/A from calculations
                     categoryMax -= weight;
-                    break;
-                  default:
-                    console.warn(
-                      `Unexpected answer for question ${question.id}: ${answer}`,
-                    );
                     break;
                 }
               });
@@ -499,11 +482,8 @@ const CyberResilienceScorecard = () => {
     const normalizedScore = totalMax > 0 ? (totalScore / totalMax) * 100 : 0;
     const calculatedFinalScore = Math.round(normalizedScore);
 
-    // Set the results data
     setFinalScore(calculatedFinalScore);
     setCategoryResults(categoryResultsData);
-
-    // Show results immediately
     setShowResults(true);
     setIsSubmitting(true);
 
@@ -524,15 +504,12 @@ const CyberResilienceScorecard = () => {
       htmlContent: "<h1>Your Report</h1><p>Details here...</p>",
     };
 
-    // Send email in the background
     try {
       const response = await postData("generate-pdf", requestBody);
       console.log("Email sent successfully:", response);
       setEmailSent(true);
     } catch (error) {
       console.error("Error sending email:", error);
-
-      // Check if it's an ApiError for better error messages
       if (error instanceof ApiError) {
         setEmailError(`Failed to send email: ${error.message}`);
       } else {
@@ -540,17 +517,9 @@ const CyberResilienceScorecard = () => {
           "An unexpected error occurred while sending your email. Please try again.",
         );
       }
-
-      // Reset email sent state in case of error
       setEmailSent(false);
     } finally {
       setIsSubmitting(false);
-    }
-  };
-
-  const goBack = () => {
-    if (currentStep > -3) {
-      navigateToStep(currentStep - 1);
     }
   };
 
@@ -560,27 +529,32 @@ const CyberResilienceScorecard = () => {
       label: "Yes",
       className: "bg-green-500 hover:bg-green-600 text-white",
       icon: "✓",
+      key: "1",
     },
     {
       value: "partial",
       label: "Partial",
       className: "bg-orange-500 hover:bg-orange-600 text-white",
       icon: "~",
+      key: "2",
     },
     {
       value: "no",
       label: "No",
       className: "bg-red-500 hover:bg-red-600 text-white",
       icon: "✗",
+      key: "3",
     },
     {
       value: "na",
       label: "N/A",
       className: "bg-gray-500 hover:bg-gray-600 text-white",
       icon: "—",
+      key: "4",
     },
   ];
 
+  // Results screen
   if (showResults) {
     const getScoreColor = (score) => {
       if (score >= 80) return "text-green-600";
@@ -596,40 +570,31 @@ const CyberResilienceScorecard = () => {
       return "Needs Improvement";
     };
 
+    const formatTime = (seconds) => {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
     return (
-      <div
-        className="min-h-screen p-6 relative"
-        style={{
-          background:
-            "radial-gradient(ellipse at top left, #0a0e27 0%, #1a2b4d 25%, #2d4a6b 50%, #3a5f85 75%, #4682a0 100%)",
-          backgroundSize: "200% 200%",
-          backgroundPosition: "0% 0%",
-        }}
-      >
-        {/* Background image overlay */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            backgroundImage: "url(/background_image.png)",
-            backgroundPosition: "center 60%",
-            backgroundRepeat: "no-repeat",
-            backgroundSize: "150%",
-            opacity: 1,
-            mixBlendMode: "screen",
-          }}
-        />
+      <div className="min-h-screen p-6 relative" style={BACKGROUND_STYLE}>
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl p-8">
-            {/* Score Display */}
+            {/* Score Display with Animation */}
             <div className="text-center mb-8">
               <h2 className="text-3xl font-bold text-gray-800 mb-4">
                 Assessment Complete!
               </h2>
+              {completionTime && (
+                <p className="text-sm text-gray-500 mb-4">
+                  Completed in {formatTime(completionTime)}
+                </p>
+              )}
               <div className="mb-6">
                 <div
-                  className={`text-6xl font-bold ${getScoreColor(finalScore)} mb-2`}
+                  className={`text-6xl font-bold ${getScoreColor(animatedScore)} mb-2 transition-all duration-100`}
                 >
-                  {finalScore}%
+                  {animatedScore}%
                 </div>
                 <div className="text-xl text-gray-600">
                   Overall Score:{" "}
@@ -638,6 +603,13 @@ const CyberResilienceScorecard = () => {
                   </span>
                 </div>
               </div>
+              
+              {DEMO_MODE && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm mb-4">
+                  <Zap className="w-4 h-4" />
+                  Demo Mode
+                </div>
+              )}
             </div>
 
             {/* Category Breakdown */}
@@ -658,7 +630,7 @@ const CyberResilienceScorecard = () => {
                           {data.score.toFixed(1)}/{data.max} ({percentage}%)
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
                         <div
                           className={`h-2 rounded-full transition-all duration-1000 ${
                             percentage >= 80
@@ -669,7 +641,10 @@ const CyberResilienceScorecard = () => {
                                   ? "bg-orange-500"
                                   : "bg-red-500"
                           }`}
-                          style={{ width: `${percentage}%` }}
+                          style={{ 
+                            width: `${percentage}%`,
+                            animation: 'slideIn 1s ease-out'
+                          }}
                         />
                       </div>
                     </div>
@@ -739,26 +714,19 @@ const CyberResilienceScorecard = () => {
     );
   }
 
+  // Main assessment flow
   return (
-    <div
-      className="min-h-screen p-6 relative"
-      style={{
-        background:
-          "radial-gradient(ellipse at top left, #0a0e27 0%, #1a2b4d 25%, #2d4a6b 50%, #3a5f85 75%, #4682a0 100%)",
-        backgroundSize: "200% 200%",
-        backgroundPosition: "0% 0%",
-      }}
-    >
+    <div className="min-h-screen p-6 relative" style={BACKGROUND_STYLE}>
       {/* Background image overlay */}
-      <div
+      <div 
         className="absolute inset-0 pointer-events-none"
         style={{
-          backgroundImage: "url(/background_image.png)",
-          backgroundPosition: "center 60%",
-          backgroundRepeat: "no-repeat",
-          backgroundSize: "150%",
+          backgroundImage: 'url(/background_image.png)',
+          backgroundPosition: 'center 60%',
+          backgroundRepeat: 'no-repeat',
+          backgroundSize: '150%',
           opacity: 1,
-          mixBlendMode: "screen",
+          mixBlendMode: 'screen'
         }}
       />
       <div className="max-w-4xl mx-auto">
@@ -770,8 +738,13 @@ const CyberResilienceScorecard = () => {
               Cyber Resilience Scorecard
             </h1>
             {currentStep >= 0 && (
-              <div className="text-lg">
-                Question {currentStep + 1} of {totalQuestions}
+              <div className="flex items-center gap-4">
+                <div className="text-lg">
+                  Question {currentStep + 1} of {totalQuestions}
+                </div>
+                <div className="px-3 py-1 bg-white/20 rounded-full text-sm">
+                  {answeredCount} answered
+                </div>
               </div>
             )}
           </div>
@@ -783,21 +756,20 @@ const CyberResilienceScorecard = () => {
               style={{ width: `${progressPercent}%` }}
             />
           </div>
+          
+          {/* Keyboard hint */}
+          {currentStep >= 0 && (
+            <div className="mt-2 text-xs text-white/60 text-center">
+              Use arrow keys to navigate • Press 1-4 to answer quickly
+            </div>
+          )}
         </div>
 
-        {/* Main Content Area */}
-        <div className="relative h-[600px] overflow-hidden">
+        {/* Main Content Area with simplified animations */}
+        <div className="relative h-[600px]">
           {/* Intro Step */}
           {currentStep === -3 && (
-            <div
-              className={`absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ${
-                isAnimating
-                  ? animationDirection === "forward"
-                    ? "-translate-x-full opacity-0"
-                    : "translate-x-full opacity-0"
-                  : "translate-x-0 opacity-100"
-              }`}
-            >
+            <div className="absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-opacity duration-300">
               <div className="h-full flex flex-col items-center justify-center max-w-2xl mx-auto">
                 <Shield className="w-20 h-20 text-indigo-600 mb-6" />
                 <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
@@ -805,13 +777,14 @@ const CyberResilienceScorecard = () => {
                 </h2>
                 <p className="text-lg text-gray-600 text-center mb-8 leading-relaxed">
                   This assessment will help you evaluate your organization's
-                  cyber resilience posture across multiple critical domains. By
-                  answering a series of targeted questions, you'll receive a
-                  comprehensive score and actionable recommendations to
-                  strengthen your defenses against modern cyber threats
-                  including ransomware, data breaches, and operational
-                  disruptions.
+                  cyber resilience posture across multiple critical domains.
                 </p>
+                {DEMO_MODE && (
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-800 rounded-lg mb-6">
+                    <Zap className="w-5 h-5" />
+                    Demo Mode Active - Quick fill available
+                  </div>
+                )}
                 <button
                   onClick={handleContinueFromIntro}
                   className="px-8 py-4 bg-indigo-600 text-white text-lg font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
@@ -824,187 +797,142 @@ const CyberResilienceScorecard = () => {
 
           {/* Category Selection Step */}
           {currentStep === -2 && (
-            <div
-              className={`absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ${
-                isAnimating
-                  ? animationDirection === "forward"
-                    ? "-translate-x-full opacity-0"
-                    : "translate-x-full opacity-0"
-                  : "translate-x-0 opacity-100"
-              }`}
-            >
+            <div className="absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-opacity duration-300">
               <div className="h-full flex flex-col">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">
                     Select Assessment Categories
                   </h2>
                   <p className="text-gray-600">
-                    Choose which areas you'd like to assess (select at least
-                    one)
+                    Choose which areas you'd like to assess
                   </p>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
                   <div className="space-y-4">
-                    {scorecardData.categories &&
-                    scorecardData.categories.length > 0 ? (
-                      scorecardData.categories.map((category) => {
-                        if (!category) return null;
+                    {scorecardData.categories.map((category) => {
+                      if (!category) return null;
 
-                        const isExpanded = expandedCategories[category.name];
-                        const selectionStatus = getCategorySelectionStatus(
-                          category.name,
-                        );
-                        const categoryQuestions = category.questions
-                          ? category.questions.length
-                          : 0;
-                        const subCategoryQuestions = category.subCategories
-                          ? category.subCategories.reduce(
-                              (sum, subCat) =>
-                                sum +
-                                (subCat.questions
-                                  ? subCat.questions.length
-                                  : 0),
-                              0,
-                            )
-                          : 0;
-                        const totalQuestions =
-                          categoryQuestions + subCategoryQuestions;
-                        const subCategoryCount = category.subCategories
-                          ? category.subCategories.length
-                          : 0;
+                      const isExpanded = expandedCategories[category.name];
+                      const selectionStatus = getCategorySelectionStatus(category.name);
+                      const hasNonEmptySubcategories = category.subCategories?.some(
+                        sc => sc.questions && sc.questions.length > 0
+                      );
 
-                        return (
+                      // Skip categories with no questions at all
+                      if (!category.questions?.length && !hasNonEmptySubcategories) {
+                        return null;
+                      }
+
+                      const categoryQuestions = category.questions?.length || 0;
+                      const subCategoryQuestions = category.subCategories?.reduce(
+                        (sum, subCat) => sum + (subCat.questions?.length || 0),
+                        0
+                      ) || 0;
+                      const totalQuestions = categoryQuestions + subCategoryQuestions;
+                      const nonEmptySubcategoryCount = category.subCategories?.filter(
+                        sc => sc.questions && sc.questions.length > 0
+                      ).length || 0;
+
+                      return (
+                        <div
+                          key={category.name}
+                          className="border-2 border-gray-200 rounded-xl overflow-hidden bg-white"
+                        >
                           <div
-                            key={category.name}
-                            className="border-2 border-gray-200 rounded-xl overflow-hidden bg-white"
+                            className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                            onClick={() => toggleCategoryExpansion(category.name)}
                           >
-                            {/* Category Header */}
-                            <div
-                              className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
-                              onClick={() =>
-                                toggleCategoryExpansion(category.name)
-                              }
-                            >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <span className="text-2xl">
-                                    {category.icon}
-                                  </span>
-                                  <div>
-                                    <h3 className="text-lg font-semibold text-gray-800">
-                                      {category.name}
-                                    </h3>
-                                    <p className="text-sm text-gray-500">
-                                      {categoryQuestions > 0 &&
-                                        `${categoryQuestions} general questions, `}
-                                      {subCategoryCount > 0 &&
-                                        `${subCategoryCount} sub-categories, `}
-                                      {totalQuestions} total questions
-                                    </p>
-                                  </div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl">{category.icon}</span>
+                                <div>
+                                  <h3 className="text-lg font-semibold text-gray-800">
+                                    {category.name}
+                                  </h3>
+                                  <p className="text-sm text-gray-500">
+                                    {categoryQuestions > 0 && `${categoryQuestions} general, `}
+                                    {nonEmptySubcategoryCount > 0 && `${nonEmptySubcategoryCount} areas, `}
+                                    {totalQuestions} total questions
+                                  </p>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  {subCategoryCount > 0 && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleSelectAllInCategory(
-                                          category.name,
-                                        );
-                                      }}
-                                      className={`px-3 py-1 text-sm rounded-lg transition-colors ${
-                                        selectionStatus === "all"
-                                          ? "bg-indigo-600 text-white"
-                                          : selectionStatus === "partial"
-                                            ? "bg-indigo-200 text-indigo-800"
-                                            : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                                      }`}
-                                    >
-                                      {selectionStatus === "all"
-                                        ? "Deselect All"
-                                        : "Select All"}
-                                    </button>
-                                  )}
-                                  {isExpanded ? <ChevronUp /> : <ChevronDown />}
-                                </div>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                {nonEmptySubcategoryCount > 0 && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSelectAllInCategory(category.name);
+                                    }}
+                                    className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                                      selectionStatus === "all"
+                                        ? "bg-indigo-600 text-white"
+                                        : selectionStatus === "partial"
+                                          ? "bg-indigo-200 text-indigo-800"
+                                          : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                                    }`}
+                                  >
+                                    {selectionStatus === "all" ? "Deselect All" : "Select All"}
+                                  </button>
+                                )}
+                                {isExpanded ? <ChevronUp /> : <ChevronDown />}
                               </div>
                             </div>
+                          </div>
 
-                            {/* Sub-categories */}
-                            {isExpanded && (
-                              <div className="border-t border-gray-200 bg-gray-50">
-                                {/* Show category-level info if there are category questions */}
-                                {category.questions &&
-                                  category.questions.length > 0 && (
-                                    <div className="p-4 bg-blue-50 border-b border-gray-200">
-                                      <p className="text-sm text-blue-700 ml-8">
-                                        <span className="font-medium">
-                                          Note:
-                                        </span>{" "}
-                                        Selecting any sub-category will also
-                                        include {category.questions.length}{" "}
-                                        general {category.name} questions
-                                      </p>
-                                    </div>
-                                  )}
-                                {category.subCategories.map((subCategory) => {
-                                  const subCategoryKey = `${category.name}:${subCategory.name}`;
-                                  const isSelected =
-                                    selectedSubCategories.includes(
-                                      subCategoryKey,
-                                    );
+                          {isExpanded && (
+                            <div className="border-t border-gray-200 bg-gray-50">
+                              {categoryQuestions > 0 && nonEmptySubcategoryCount > 0 && (
+                                <div className="p-4 bg-blue-50 border-b border-gray-200">
+                                  <p className="text-sm text-blue-700 ml-8">
+                                    <span className="font-medium">Note:</span> Selecting any area includes {categoryQuestions} general questions
+                                  </p>
+                                </div>
+                              )}
+                              {category.subCategories?.map((subCategory) => {
+                                // Skip empty subcategories
+                                if (!subCategory.questions || subCategory.questions.length === 0) {
+                                  return null;
+                                }
 
-                                  return (
-                                    <div
-                                      key={subCategory.name}
-                                      onClick={() =>
-                                        handleSubCategorySelection(
-                                          category.name,
-                                          subCategory.name,
-                                        )
-                                      }
-                                      className={`cursor-pointer p-4 border-b border-gray-200 last:border-b-0 transition-colors ${
-                                        isSelected
-                                          ? "bg-indigo-50"
-                                          : "hover:bg-white"
-                                      }`}
-                                    >
-                                      <div className="flex items-center justify-between ml-8">
-                                        <div>
-                                          <h4 className="font-medium text-gray-800">
-                                            {subCategory.name}
-                                          </h4>
-                                          <p className="text-sm text-gray-500">
-                                            {subCategory.questions.length}{" "}
-                                            questions
-                                          </p>
-                                        </div>
-                                        <div
-                                          className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                                            isSelected
-                                              ? "bg-indigo-600 border-indigo-600"
-                                              : "border-gray-300"
-                                          }`}
-                                        >
-                                          {isSelected && (
-                                            <Check className="w-3 h-3 text-white" />
-                                          )}
-                                        </div>
+                                const subCategoryKey = `${category.name}:${subCategory.name}`;
+                                const isSelected = selectedSubCategories.includes(subCategoryKey);
+
+                                return (
+                                  <div
+                                    key={subCategory.name}
+                                    onClick={() => handleSubCategorySelection(category.name, subCategory.name)}
+                                    className={`cursor-pointer p-4 border-b border-gray-200 last:border-b-0 transition-colors ${
+                                      isSelected ? "bg-indigo-50" : "hover:bg-white"
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between ml-8">
+                                      <div>
+                                        <h4 className="font-medium text-gray-800">
+                                          {subCategory.name}
+                                        </h4>
+                                        <p className="text-sm text-gray-500">
+                                          {subCategory.questions.length} questions
+                                        </p>
+                                      </div>
+                                      <div
+                                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                                          isSelected
+                                            ? "bg-indigo-600 border-indigo-600"
+                                            : "border-gray-300"
+                                        }`}
+                                      >
+                                        {isSelected && <Check className="w-3 h-3 text-white" />}
                                       </div>
                                     </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        No categories available
-                      </div>
-                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1026,8 +954,7 @@ const CyberResilienceScorecard = () => {
                     }`}
                     disabled={selectedSubCategories.length === 0}
                   >
-                    Continue ({selectedSubCategories.length} sub-categories
-                    selected)
+                    Continue ({selectedSubCategories.length} selected)
                   </button>
                 </div>
               </div>
@@ -1036,29 +963,20 @@ const CyberResilienceScorecard = () => {
 
           {/* Email Step */}
           {currentStep === -1 && (
-            <div
-              className={`absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ${
-                isAnimating
-                  ? animationDirection === "forward"
-                    ? "-translate-x-full opacity-0"
-                    : "translate-x-full opacity-0"
-                  : "translate-x-0 opacity-100"
-              }`}
-            >
+            <div className="absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-opacity duration-300">
               <div className="h-full flex flex-col items-center justify-center max-w-md mx-auto">
                 <Mail className="w-16 h-16 text-indigo-600 mb-6" />
                 <h2 className="text-2xl font-bold text-gray-800 mb-4">
                   Enter Your Email
                 </h2>
                 <p className="text-gray-600 text-center mb-8">
-                  We'll send your personalized Cyber Resilience report with
-                  detailed recommendations to this email address.
+                  We'll send your personalized report to this email address.
                 </p>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  onKeyPress={(e) => e.key === "Enter" && handleEmailSubmit()}
+                  onKeyDown={(e) => e.key === "Enter" && handleEmailSubmit()}
                   className="w-full p-4 text-lg border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent mb-6"
                   placeholder="your@email.com"
                   autoFocus
@@ -1082,144 +1000,82 @@ const CyberResilienceScorecard = () => {
           )}
 
           {/* Question Steps */}
-          {currentStep >= 0 &&
-            allQuestions.map((question, index) => {
-              const isCurrentQuestion = index === currentStep;
-              const isPreviousQuestion = index === previousStep;
-
-              // Only render current and previous questions during animation
-              if (!isCurrentQuestion && !isPreviousQuestion && isAnimating)
-                return null;
-              if (!isCurrentQuestion && !isAnimating) return null;
-
-              // Additional validation for question data
-              if (!question || typeof question !== "object") {
-                console.error(
-                  `Question at index ${index} is malformed:`,
-                  question,
-                );
-                return null;
-              }
-
-              return (
-                <div
-                  key={`question-${index}`}
-                  className={`absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-all duration-300 ease-in-out ${
-                    isAnimating
-                      ? isPreviousQuestion
-                        ? animationDirection === "forward"
-                          ? "-translate-x-full opacity-0"
-                          : "translate-x-full opacity-0"
-                        : isCurrentQuestion
-                          ? animationDirection === "forward"
-                            ? "translate-x-0 opacity-100"
-                            : "translate-x-0 opacity-100"
-                          : ""
-                      : isCurrentQuestion
-                        ? "translate-x-0 opacity-100"
-                        : animationDirection === "forward"
-                          ? "translate-x-full opacity-0"
-                          : "-translate-x-full opacity-0"
-                  }`}
-                  style={{
-                    transform:
-                      isAnimating && !isPreviousQuestion && !isCurrentQuestion
-                        ? animationDirection === "forward"
-                          ? "translateX(100%)"
-                          : "translateX(-100%)"
-                        : undefined,
-                  }}
-                >
-                  <div className="h-full flex flex-col">
-                    {/* Category Header */}
-                    <div className="mb-6">
-                      <div className="flex items-center gap-2 text-indigo-600 mb-1">
-                        <span className="text-2xl">
-                          {question.categoryIcon || "❓"}
-                        </span>
-                        <span className="font-semibold">
-                          {question.category || "Unknown Category"}
-                        </span>
-                      </div>
-                      {question.subCategory ? (
-                        <div className="text-sm text-gray-600 ml-10">
-                          {question.subCategory}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-600 ml-10 font-medium">
-                          General {question.category || "Unknown Category"}{" "}
-                          Question
-                        </div>
-                      )}
-                      <div className="text-sm text-gray-500 ml-10">
-                        Question {question.id || "N/A"}
-                      </div>
+          {currentStep >= 0 && currentQuestion && (
+            <div className="absolute inset-0 bg-white rounded-2xl shadow-xl p-8 transition-opacity duration-300">
+              <div className="h-full flex flex-col">
+                {/* Category Header */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-2 text-indigo-600 mb-1">
+                    <span className="text-2xl">{currentQuestion.categoryIcon}</span>
+                    <span className="font-semibold">{currentQuestion.category}</span>
+                  </div>
+                  {currentQuestion.subCategory && (
+                    <div className="text-sm text-gray-600 ml-10">
+                      {currentQuestion.subCategory}
                     </div>
+                  )}
+                </div>
 
-                    {/* Question Text */}
-                    <div className="flex-1 flex items-center justify-center">
-                      <h3 className="text-2xl text-gray-800 text-center leading-relaxed max-w-3xl">
-                        {question.text || "Question text unavailable"}
-                      </h3>
-                    </div>
+                {/* Question Text */}
+                <div className="flex-1 flex items-center justify-center">
+                  <h3 className="text-2xl text-gray-800 text-center leading-relaxed max-w-3xl">
+                    {currentQuestion.text}
+                  </h3>
+                </div>
 
-                    {/* Answer Options */}
-                    <div className="grid grid-cols-2 gap-4 mt-8">
-                      {answerOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => handleAnswer(option.value)}
-                          className={`${option.className} py-6 px-8 rounded-xl text-xl font-semibold transition-all transform hover:scale-105 flex items-center justify-center gap-3`}
-                          disabled={!question.id} // Disable if no question ID
-                        >
-                          <span className="text-2xl">{option.icon}</span>
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
+                {/* Answer Options */}
+                <div className="grid grid-cols-2 gap-4 mt-8">
+                  {answerOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => handleAnswer(option.value)}
+                      className={`${option.className} py-6 px-8 rounded-xl text-xl font-semibold transition-all transform hover:scale-105 flex items-center justify-center gap-3 relative`}
+                    >
+                      <span className="text-2xl">{option.icon}</span>
+                      {option.label}
+                      <span className="absolute top-2 right-2 text-xs opacity-60">
+                        {option.key}
+                      </span>
+                    </button>
+                  ))}
+                </div>
 
-                    {/* Navigation */}
-                    <div className="mt-8 flex justify-between items-center">
-                      <button
-                        onClick={goBack}
-                        disabled={currentStep <= -3}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                          currentStep > -3
-                            ? "text-gray-600 hover:text-gray-800 hover:bg-gray-100"
-                            : "text-gray-400 cursor-not-allowed"
-                        }`}
-                      >
-                        <ChevronLeft className="w-5 h-5" />
-                        Back
-                      </button>
+                {/* Navigation */}
+                <div className="mt-8 flex justify-between items-center">
+                  <button
+                    onClick={goBack}
+                    className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                    Back
+                  </button>
 
-                      <div className="text-gray-500">
-                        {
-                          Object.keys(answers).filter((id) =>
-                            allQuestions.find((q) => q.id === id),
-                          ).length
-                        }{" "}
-                        answers completed
-                      </div>
-                    </div>
+                  <div className="text-gray-500">
+                    {answeredCount} / {totalQuestions} completed
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            </div>
+          )}
 
           {/* Loading State */}
           {isSubmitting && (
             <div className="absolute inset-0 bg-white rounded-2xl shadow-xl flex items-center justify-center">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                <p className="text-lg text-gray-600">
-                  Generating your report...
-                </p>
+                <p className="text-lg text-gray-600">Generating your report...</p>
               </div>
             </div>
           )}
         </div>
       </div>
+      
+      <style jsx>{`
+        @keyframes slideIn {
+          from { width: 0; }
+          to { width: var(--final-width); }
+        }
+      `}</style>
     </div>
   );
 };

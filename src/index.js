@@ -1,15 +1,12 @@
 // src/index.js
 import React from "react";
 import ReactDOM from "react-dom";
-import CyberResilienceScorecard from "./CyberResilienceScorecard";
-import ErrorBoundary from "./ErrorBoundary";
+import CyberResilienceScorecardRefactored from "./CyberResilienceScorecardRefactored";
 import "./index.css";
 
 ReactDOM.render(
   <React.StrictMode>
-    <ErrorBoundary>
-      <CyberResilienceScorecard />
-    </ErrorBoundary>
+    <CyberResilienceScorecardRefactored />
   </React.StrictMode>,
   document.getElementById("root"),
 );
