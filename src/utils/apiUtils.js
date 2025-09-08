@@ -1,4 +1,3 @@
-cyberScorecard/src/utils/apiUtils.js
 /**
  * Utility functions for API requests with comprehensive error handling
  */

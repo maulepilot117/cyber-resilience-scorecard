@@ -1,4 +1,3 @@
-cyberScorecard/src/ErrorBoundary.js
 import React from 'react';
 import { Shield, AlertTriangle, RefreshCw } from 'lucide-react';
 

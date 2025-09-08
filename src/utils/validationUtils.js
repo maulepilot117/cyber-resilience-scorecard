@@ -1,4 +1,3 @@
-cyberScorecard / src / utils / validationUtils.js;
 /**
  * Utility functions for input validation and sanitization
  */
