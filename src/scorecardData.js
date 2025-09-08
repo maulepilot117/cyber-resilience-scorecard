@@ -295,27 +295,27 @@ export const scorecardData = {
           name: "Microsoft 365",
           questions: [
             {
-              id: "3.01",
+              id: "4.01",
               text: "Data protection solution requires no infrastructure be deployed to protect Microsoft 365 data",
               weight: 3,
             },
             {
-              id: "3.02",
+              id: "4.02",
               text: "Data protection solution air-gaps data away from Microsoft tenant, ensuring survivability of data in case of a tenant issue",
               weight: 3,
             },
             {
-              id: "3.03",
+              id: "4.03",
               text: "Customers can optionally utilize their own encryption keys, ensuring the security of their M365 backup data. Customers are able to rotate and invalidate keys at will",
               weight: 3,
             },
             {
-              id: "3.04",
+              id: "4.04",
               text: "Data protection solution leverages Microsoft best practices in interfacing with the M365 graph API, intelligently backing off, to achieve the highest possible performance without throttling",
               weight: 3,
             },
             {
-              id: "3.05",
+              id: "4.05",
               text: 'File indexing enabling a "Google-like" search for file and folder level recovery',
               weight: 3,
             },
@@ -343,42 +343,42 @@ export const scorecardData = {
           name: "Active Directory",
           questions: [
             {
-              id: "4.01",
+              id: "5.01",
               text: "Are you protecting all parts of your Active Directory Forest?",
               weight: 3,
             },
             {
-              id: "4.02",
+              id: "5.02",
               text: "Are you protecting data in Microsoft EntraID, not relying on the recycle bin?",
               weight: 3,
             },
             {
-              id: "4.03",
+              id: "5.03",
               text: "Identity protection solution stores data on logically air gapped system, resilient from cyber attack.",
               weight: 3,
             },
             {
-              id: "4.04",
+              id: "5.04",
               text: "Orchestrate recovery of Active Directory Forests.",
               weight: 3,
             },
             {
-              id: "4.05",
+              id: "5.05",
               text: "In addition to Users and Groups, protect Enterprise Applications, Application Registrations and Conditional Access Policies in Microsoft EntraID.",
               weight: 3,
             },
             {
-              id: "4.06",
+              id: "5.06",
               text: "Recover both Active Directory Forest and EntraID Enterprise Apps, App Registrations and Conditional Access Policies.",
               weight: 3,
             },
             {
-              id: "4.07",
+              id: "5.07",
               text: "Compare AD object attritbutes between two snapshots.",
               weight: 3,
             },
             {
-              id: "4.08",
+              id: "5.08",
               text: "Recover AD object attributes to production Active Directory without the need to recover the full forest, domain or object",
               weight: 3,
             },
@@ -395,12 +395,12 @@ export const scorecardData = {
       icon: "🔒",
       questions: [
         {
-          id: "5.01",
+          id: "6.01",
           text: "Ability to detect and alert on active encryption events across all data sources",
           weight: 4,
         },
         {
-          id: "5.02",
+          id: "6.02",
           text: "Detect and alert on encryption events in VM environment",
           weight: 4,
         },
@@ -410,22 +410,22 @@ export const scorecardData = {
           weight: 4,
         },
         {
-          id: "5.04",
+          id: "6.04",
           text: "Proactively scan and alert on known indicators of compromise from an industry standard list of signatures, alerting customers to threats within their environment before the attack occurs",
           weight: 4,
         },
         {
-          id: "5.05",
+          id: "6.05",
           text: "Add custom YARA rules or file hashes to the scanning engine and scan for those IOCs on every backup",
           weight: 3,
         },
         {
-          id: "5.06",
+          id: "6.06",
           text: "Scan all data sources for sensitive data with 60 built-in scanners",
           weight: 3,
         },
         {
-          id: "5.07",
+          id: "6.07",
           text: "Build custom scanners based off dictionary words or patterns and identify all data that matches across all data sources",
           weight: 3,
         },
