@@ -1,5 +1,6 @@
 import { scorecardData } from '../../scorecardData';
 import { postData, ApiError } from '../apiUtils';
+import { getDetailedReportContent } from './reportDescriptions';
 
 export const calculateAndSubmitScore = async (
   email,
@@ -50,17 +51,6 @@ export const calculateAndSubmitScore = async (
             case "yes":
               categoryScore += weight;
               break;
-            case "partial":
-              categoryScore += weight * 0.5;
-              recommendationsList.push({
-                category: category.name,
-                subCategory: null,
-                question: question.id,
-                text: question.text,
-                status: "partial",
-                potentialPoints: weight * 0.5,
-              });
-              break;
             case "no":
               recommendationsList.push({
                 category: category.name,
@@ -72,6 +62,7 @@ export const calculateAndSubmitScore = async (
               });
               break;
             case "na":
+              // N/A questions are excluded from scoring entirely
               categoryMax -= weight;
               break;
           }
@@ -95,17 +86,6 @@ export const calculateAndSubmitScore = async (
                 case "yes":
                   categoryScore += weight;
                   break;
-                case "partial":
-                  categoryScore += weight * 0.5;
-                  recommendationsList.push({
-                    category: category.name,
-                    subCategory: subCategory.name,
-                    question: question.id,
-                    text: question.text,
-                    status: "partial",
-                    potentialPoints: weight * 0.5,
-                  });
-                  break;
                 case "no":
                   recommendationsList.push({
                     category: category.name,
@@ -117,6 +97,7 @@ export const calculateAndSubmitScore = async (
                   });
                   break;
                 case "na":
+                  // N/A questions are excluded from scoring entirely
                   categoryMax -= weight;
                   break;
               }
@@ -154,11 +135,19 @@ export const calculateAndSubmitScore = async (
     })
   );
 
+  // Generate detailed report content for PDF
+  const detailedReport = getDetailedReportContent(
+    calculatedFinalScore,
+    categoryResultsData,
+    recommendationsList
+  );
+
   const requestBody = {
     email,
     score: calculatedFinalScore,
     categoryScore: categoryScoresArray,
     recommendations: recommendationsList,
+    detailedReport, // Include detailed descriptions for PDF
     htmlContent: "<h1>Your Report</h1><p>Details here...</p>",
   };
 

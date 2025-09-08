@@ -102,7 +102,7 @@ export const getQuestionSubset = (questions, percentage = 0.3) => {
   selectedIndices.forEach(index => {
     const question = questions[index];
     if (question && question.id) {
-      const answers = ["yes", "partial", "no", "na"];
+      const answers = ["yes", "no", "na"];
       answeredQuestions[question.id] = answers[Math.floor(Math.random() * answers.length)];
     }
   });

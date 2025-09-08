@@ -169,9 +169,9 @@ const CyberResilienceScorecard = () => {
         }
       }
       
-      // Quick answer with number keys (1-4)
-      if (currentStep >= 0 && ['1', '2', '3', '4'].includes(e.key)) {
-        const answerMap = { '1': 'yes', '2': 'partial', '3': 'no', '4': 'na' };
+      // Quick answer with number keys (1-3)
+      if (currentStep >= 0 && ['1', '2', '3'].includes(e.key)) {
+        const answerMap = { '1': 'yes', '2': 'no', '3': 'na' };
         handleAnswer(answerMap[e.key]);
       }
     };
@@ -207,7 +207,7 @@ const CyberResilienceScorecard = () => {
     if (!DEMO_MODE) return;
     
     const demoAnswers = {};
-    const answerOptions = ['yes', 'partial', 'no', 'na'];
+    const answerOptions = ['yes', 'no', 'na'];
     const weights = [0.6, 0.25, 0.1, 0.05]; // Weighted towards positive answers for demo
     
     allQuestions.forEach(question => {
@@ -339,13 +339,12 @@ const CyberResilienceScorecard = () => {
         [currentQuestion.id]: answerValidation.sanitized,
       }));
 
-      setTimeout(() => {
-        if (currentStep < totalQuestions - 1) {
-          setCurrentStep(currentStep + 1);
-        } else {
-          calculateAndSubmitScore();
-        }
-      }, 200); // Reduced delay for snappier feel
+      // Immediately advance to next question without delay
+      if (currentStep < totalQuestions - 1) {
+        setCurrentStep(prev => prev + 1);
+      } else {
+        calculateAndSubmitScore();
+      }
     }
   };
 
@@ -392,17 +391,6 @@ const CyberResilienceScorecard = () => {
               case "yes":
                 categoryScore += weight;
                 break;
-              case "partial":
-                categoryScore += weight * 0.5;
-                recommendationsList.push({
-                  category: category.name,
-                  subCategory: null,
-                  question: question.id,
-                  text: question.text,
-                  status: "partial",
-                  potentialPoints: weight * 0.5,
-                });
-                break;
               case "no":
                 recommendationsList.push({
                   category: category.name,
@@ -436,17 +424,6 @@ const CyberResilienceScorecard = () => {
                 switch (answer) {
                   case "yes":
                     categoryScore += weight;
-                    break;
-                  case "partial":
-                    categoryScore += weight * 0.5;
-                    recommendationsList.push({
-                      category: category.name,
-                      subCategory: subCategory.name,
-                      question: question.id,
-                      text: question.text,
-                      status: "partial",
-                      potentialPoints: weight * 0.5,
-                    });
                     break;
                   case "no":
                     recommendationsList.push({
@@ -532,25 +509,18 @@ const CyberResilienceScorecard = () => {
       key: "1",
     },
     {
-      value: "partial",
-      label: "Partial",
-      className: "bg-orange-500 hover:bg-orange-600 text-white",
-      icon: "~",
-      key: "2",
-    },
-    {
       value: "no",
       label: "No",
       className: "bg-red-500 hover:bg-red-600 text-white",
       icon: "✗",
-      key: "3",
+      key: "2",
     },
     {
       value: "na",
       label: "N/A",
       className: "bg-gray-500 hover:bg-gray-600 text-white",
       icon: "—",
-      key: "4",
+      key: "3",
     },
   ];
 
@@ -867,7 +837,7 @@ const CyberResilienceScorecard = () => {
                                     className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                                       selectionStatus === "all"
                                         ? "bg-indigo-600 text-white"
-                                        : selectionStatus === "partial"
+                                        : selectionStatus === "some"
                                           ? "bg-indigo-200 text-indigo-800"
                                           : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                                     }`}

@@ -1,6 +1,6 @@
 module.exports = {
   content: ['./src/**/*.{js,jsx,ts,tsx}', './public/index.html'],
-  darkMode: false, // or 'media' or 'class'
+  darkMode: 'media', // Responsive dark mode based on OS preference
   theme: {
     extend: {},
   },

@@ -50,10 +50,14 @@ const QuestionStep = ({
                 <button
                   key={option.value}
                   onClick={() => handleAnswer(currentQuestion.id, option.value)}
-                  className={`p-6 rounded-xl border-2 transition-all ${
+                  className={`p-6 rounded-xl border-2 transition-all duration-200 ${
                     answers[currentQuestion.id] === option.value
-                      ? `${option.className} border-transparent transform scale-105 shadow-lg`
-                      : "bg-white border-gray-300 hover:border-gray-400 hover:shadow-md"
+                      ? `${option.className} transform scale-105 shadow-xl ring-4 ring-opacity-50 ${
+                          option.value === 'yes' ? 'ring-green-400 border-green-600' : 
+                          option.value === 'no' ? 'ring-red-400 border-red-600' : 
+                          'ring-gray-400 border-gray-600'
+                        }`
+                      : "bg-white border-gray-300 hover:border-gray-400 hover:shadow-md hover:scale-[1.02]"
                   }`}
                 >
                   <div className="flex items-center justify-center gap-3">

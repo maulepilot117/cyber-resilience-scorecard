@@ -57,12 +57,9 @@ const CyberResilienceScorecard = () => {
             handleAnswer(currentQuestion.id, "yes");
             break;
           case "2":
-            handleAnswer(currentQuestion.id, "partial");
-            break;
-          case "3":
             handleAnswer(currentQuestion.id, "no");
             break;
-          case "4":
+          case "3":
             handleAnswer(currentQuestion.id, "na");
             break;
           default:
@@ -76,11 +73,37 @@ const CyberResilienceScorecard = () => {
   }, [currentStep, currentQuestion]);
 
   const handleAnswer = useCallback((questionId, value) => {
+    // First, update the answer to show the color change
     setAnswers((prev) => ({
       ...prev,
       [questionId]: value,
     }));
-  }, []);
+    
+    // Then advance after a brief delay to let user see the selection
+    setTimeout(() => {
+      if (currentStep < totalQuestions - 1) {
+        setCurrentStep((prevStep) => prevStep + 1);
+      } else {
+        // Submit assessment when on last question
+        setAnswers((prev) => {
+          calculateAndSubmitScore(
+            email,
+            selectedSubCategories,
+            prev,
+            startTime,
+            setCompletionTime,
+            setFinalScore,
+            setCategoryResults,
+            setShowResults,
+            setIsSubmitting,
+            setEmailSent,
+            setEmailError
+          );
+          return prev;
+        });
+      }
+    }, 300); // 300ms delay to show the color change
+  }, [currentStep, totalQuestions, email, selectedSubCategories, startTime]);
 
   const goBack = () => {
     if (currentStep > -3) {
@@ -176,7 +199,7 @@ const CyberResilienceScorecard = () => {
 
     if (selectedCount === 0) return "none";
     if (selectedCount === categorySubCategoryKeys.length) return "all";
-    return "partial";
+    return "some";
   };
 
   const quickFillDemo = () => {

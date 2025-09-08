@@ -20,24 +20,17 @@ export const answerOptions = [
     key: "1",
   },
   {
-    value: "partial",
-    label: "Partial",
-    className: "bg-orange-500 hover:bg-orange-600 text-white",
-    icon: "~",
-    key: "2",
-  },
-  {
     value: "no",
     label: "No",
     className: "bg-red-500 hover:bg-red-600 text-white",
     icon: "✗",
-    key: "3",
+    key: "2",
   },
   {
     value: "na",
     label: "N/A",
     className: "bg-gray-500 hover:bg-gray-600 text-white",
-    icon: "?",
-    key: "4",
+    icon: "—",
+    key: "3",
   },
 ];

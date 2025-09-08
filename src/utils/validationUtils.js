@@ -80,7 +80,7 @@ export const validateAnswer = (answer) => {
   const errors = [];
   let sanitized = "";
 
-  const validAnswers = ["yes", "partial", "no", "na"];
+  const validAnswers = ["yes", "no", "na"];
 
   // Basic type checking
   if (typeof answer !== "string") {
