@@ -6,75 +6,70 @@ export const scorecardData = {
       questions: [
         {
           id: "1.01",
-          text: "The data protection solution leverages natively immutable storage layer",
+          text: "Is your backup data protected by an append-only file system that makes it architecturally impossible to modify, encrypt, or delete, even by an administrator with root-level credentials?",
           weight: 4,
         },
         {
           id: "1.02",
-          text: "The data protection solution does not leverage open storage protocols such as NFS or CIFS/SMB to transfer data",
+          text: "Is the data protection system's immutability achieved through an inherent, append-only file system, rather than relying on configurable retention lock policies on a separate storage system?",
           weight: 3,
         },
         {
           id: "1.08",
-          text: "Storage consumption in the data protection solution is easily predictable",
+          text: "Does the data protection platform continuously verify data integrity via checksums throughout the entire data lifecycle to protect against unauthorized modification? ",
           weight: 2,
         },
         {
           id: "1.03",
-          text: "The data protection solution does not rely on Network Time Protocol to determine the age of backups",
+          text: "Does the data protection system operate in a separate security domain with an independent authentication mechanism, ensuring that a compromise of your primary production directory (e.g., Active Directory) does not grant an attacker access to the backup data?",
           weight: 2,
         },
         {
           id: "1.04",
-          text: "The data protection solution leverages end-to-end encryption for both data in flight and data at rest",
+          text: "Are the backup copies stored in a logically isolated location, unreachable via the network or in an isolated cloud account?",
           weight: 3,
         },
         {
           id: "1.05",
-          text: "The data protection solution ensures rogue administrators cannot make sweeping changes to the software by enabling quorum-based authorization for destructive changes",
+          text: "Does the data protection solution ensure rogue administrators cannot make sweeping changes to the software by enabling quorum-based authorization?",
           weight: 3,
         },
         {
           id: "1.07",
-          text: "The data protection solution is logically air-gapped from the rest of the infrastructure. There is no ability for anyone to mount or browse the data protection solution's filesystem",
+          text: "Is data protection solution logically air-gapped from the rest of the infrastructure, where there is no ability for anyone to mount or browse the data protection solution's filesystem",
           weight: 4,
         },
         {
           id: "1.12",
-          text: "Data protection solution should be installed on hardened Linux, with no shell or SSH access",
+          text: "Is multi-factor authentication (MFA) natively integrated and mandatorily enforced for all administrative access attempts?",
           weight: 3,
         },
         {
           id: "1.13",
-          text: "Data protection solution should not operate as a virtual machine, but in a standalone appliance",
+          text: "Does the data protection solution rely on the Windows operating system for its core functionality?",
           weight: 3,
         },
         {
           id: "1.06",
-          text: "The data protection solution does not require proxies or agents",
+          text: "Does the data protection system enforce the principle of least privilege through a granular Role-Based Access Control (RBAC) system that applies consistently across all user interfaces (GUI, CLI, API)?",
           weight: 2,
         },
         {
           id: "1.09",
-          text: "Easily scale the data protection solution by simply adding more appliances. Compute and storage scale together",
+          text: "Does the data protection solution allow shell access only to a minimal set of commands required for troubleshooting, with all commands fully auditable?",
           weight: 2,
         },
         {
           id: "1.10",
-          text: "Manage backups via policy, not backup jobs",
+          text: "Does the data protection solution mandate encryption of data both at rest and in transit, utilizing strong encryption standards such as AES-256 for data at rest and TLS 1.2 or higher for data in transit?",
           weight: 3,
         },
         {
           id: "1.11",
-          text: "Automate discovery and protection of new workloads",
+          text: "Does the data protection solution rely on Network Time Protocol (NTP) to determine the age of backups and when to expire them?",
           weight: 3,
         },
-        {
-          id: "1.14",
-          text: "From the backup policy, configure data replication and data archival",
-          weight: 3,
-        },
-      ],
+     ],
       subCategories: [
         {
           name: "Architecture",
@@ -95,67 +90,77 @@ export const scorecardData = {
           questions: [
             {
               id: "2.01",
-              text: "Backups of virtualized workloads occur without the need to deploy or manage proxies",
+              text: "Does the data protection solution support agentless backup of virtualized workloads?",
               weight: 3,
             },
             {
               id: "2.02",
-              text: "Auto-discovery and auto-protection of virtualized workloads",
+              text: "Does the data protection solution support all major hypervisors including VMware vSphere, Microsoft Hyper-V, Nutanix AHV and Red Hat Virtualization?",
               weight: 3,
             },
             {
               id: "2.03",
-              text: "Ability to recover virtualized workloads instantly in-place or in an isolated environment",
+              text: "Does the data protection solution allow for restoration of a virtual machine in minutes by running it directly from backup storage, without waiting for a full data restore to complete?",
               weight: 3,
             },
             {
               id: "2.04",
-              text: "Automatically deploy agents for file indexing and cyber monitoring",
+              text: "Does the data protection solution support granular recovery of individual files and application objects directly from VM backups, without the need to first recover the virtual machine?",
               weight: 3,
             },
+            {
+              id: "2.05",
+              text: "Does the data protection solution support recovery of VMs to an isolated 'clean room' environment to facilitate malware remediation and forensic analysis?",
+              weight: 3,
+            },
+            {
+              id: "2.06",
+              text: "Does the data protection solution provide the ability to automatically discover and protect new virtual machines as they are created, without manual intervention?",
+              weight: 3,
+            }
           ],
         },
         {
           name: "Database",
           questions: [
             {
-              id: "2.05",
-              text: "Protect databases without the need to write custom scripts",
-              weight: 3,
-            },
-            {
-              id: "2.06",
-              text: "Protect databases through native APIs, not a 'dump and scrape'",
-              weight: 3,
-            },
-            {
               id: "2.07",
-              text: "Automatically discover and protect new and existing databases on a database host",
+              text: "Does your current backup solution guarantee application-consistent recovery for all transactional databases (e.g., SQL, Oracle), ensuring no data corruption upon restore?",
               weight: 3,
             },
             {
               id: "2.08",
-              text: "Protect database logs alongside database to allow point-in-time recovery",
+              text: "Does the data protection solution support all major database platforms including Microsoft SQL Server, Oracle Database, MySQL, PostgreSQL, and NoSQL databases like MongoDB and Cassandra?",
               weight: 3,
             },
             {
               id: "2.09",
-              text: "Instantly recover database in-place or live mount with a zero-byte copy on a new database host",
+              text: "Does the data protection solution automatically discover and protect new database instances as they are created, without manual intervention?",
               weight: 3,
             },
             {
               id: "2.10",
-              text: "Enable quick database zero-byte copies for test/dev environments",
+              text: "Does the data protection solution support granular recovery of individual database objects (e.g., tables, schemas) directly from database backups, without the need to first recover the entire database?",
               weight: 3,
             },
             {
               id: "2.11",
-              text: "Quickly recover entire database or granular recovery of only the data required",
+              text: "Does the data protection solution rely on database adminsistrators to write and maintain complex scripts to ensure application-consistent backups?",
               weight: 3,
             },
             {
               id: "2.12",
-              text: "Centralized management of database protection irregardless of database engine",
+              text: "Does the data protection solution allow for instant, zero-byte recovery of databases by running them directly from backup storage, without waiting for a full data restore to complete?",
+              weight: 3,
+            },
+            {
+              id: "2.13",
+              text: "Does the data protection systemn provide a unified policy engine for infrastructure teams while also empowering database administrators with self-service, role-based access to perform their own granular, point-in-time restores?",
+              weight: 3,
+            },
+            {
+              id: "2.14",
+              text: "Does the data protection solution provide the ability to protect transaction logs, enabling point-in-time recovery to moments within the retention period?",
               weight: 3,
             },
           ],
@@ -164,28 +169,28 @@ export const scorecardData = {
           name: "Unstructured",
           questions: [
             {
-              id: "2.13",
-              text: "Automatically discover, scan, index and move billions of files across any unstructured data source, including cloud data stores",
-              weight: 3,
-            },
-            {
-              id: "2.14",
-              text: "Ability to process NAS data in parallel streams with an incrimental forever approach",
-              weight: 3,
-            },
-            {
               id: "2.15",
-              text: "Manage NAS backups in the same interface as other datacenter, cloud and SaaS protection",
+              text: "Does the data protection platform provide a global, indexed catalog of all unstructured data, allowing you to perform a search for any file across your entire enterprise and restore it instantly without needing to know its original location or backup date?",
               weight: 3,
             },
             {
               id: "2.16",
-              text: "Leverage modern data protection strategies with NAS sources, relying on vendor APIs instead of legacy protocols",
+              text: "Does the data protection solution leverage the NAS vendor's APIs for performant, scalable backups instead of relying on protocols like NDMP?",
               weight: 3,
             },
             {
               id: "2.17",
-              text: "Leverage any archival or recovery location and change at any time to most cost effective storage tier",
+              text: "Does the data protection solution require NAS data to be moved to a separate backup appliance for protection?",
+              weight: 3,
+            },
+            {
+              id: "2.18",
+              text: "Does the data protection solution leverage a stateless, data-mover VM, to move data directly from the NAS to the backup storage?",
+              weight: 3,
+            },
+            {
+              id: "2.19",
+              text: "Can you leverage your backup data to answer security and compliance queries, such as identifying all files that contain sensitive data patterns or have not been accessed in several years, without impacting your production environment?",
               weight: 3,
             },
           ],
@@ -198,37 +203,37 @@ export const scorecardData = {
       questions: [
         {
           id: "3.01",
-          text: "The data protection solution leverages native cloud APIs to orchestrate protection and recovery",
+          text: "Do you use a single data protection platform and policy engine to manage backups, replication, and archival for all your workloads, whether they are on-premises, in AWS, Azure, or GCP?",
           weight: 3,
         },
         {
           id: "3.02",
-          text: "Backups can be stored in user determined storage tiers. There is no requirement to follow the cloud providers data tiering requirements",
+          text: "Does the data protection solution automtically discover and protect new cloud native workloads as they are created, without manual intervention?",
           weight: 3,
         },
         {
           id: "3.03",
-          text: "Authentication to the cloud leverages a least-privilege model and is configured by an easy-to-follow wizard",
+          text: "Does the data protection solution rely on a least-privilege access model, ensuring that even if the credentials are compromised, an attacker cannot delete or encrypt your backup data?",
           weight: 3,
         },
         {
           id: "3.04",
-          text: "Data protection solution does not store cloud credentials",
+          text: "Does the data protection solution leverage a token-based authentication model, avoiding the use of long-lived access keys that can be easily compromised?",
           weight: 3,
         },
         {
           id: "3.05",
-          text: "Data protection solution does not require administrator credentials to protect cloud native workloads",
+          text: "Does the data protection solution leverage ephemeral compute resources that are created on-demand in your cloud account to index backups and generate hashes, ensuring that costs remain low?",
           weight: 3,
         },
         {
           id: "3.06",
-          text: "Data protection solution does not require infrastructure to be deployed in the customer cloud environment",
+          text: "Does the data protection solution allow the use of customer-managed key encryption keys (CMKEK) for all cloud workloads, ensuring that only the customer has access to the keys and can rotate or revoke them at any time?",
           weight: 2,
         },
         {
           id: "3.07",
-          text: "Data protection solution leverages ephemeral compute to calculate hashes, index files all from within the customer's cloud account",
+          text: "The data protection solution leverages native cloud APIs to ensure efficient, scalable backups without impacting production workloads",
           weight: 3,
         },
       ],
@@ -238,44 +243,75 @@ export const scorecardData = {
           questions: [
             {
               id: "3.08",
-              text: "Backups are able to be stored outside of the AWS Organization, providing a logical air-gap",
+              text: "Does the data protection solution allow you to store backups in a separate AWS account or Organization that you control, ensuring that even if your primary account is compromised, your backup data remains safe?",
               weight: 3,
             },
             {
               id: "3.09",
-              text: "Automate the autentication of data protection solution via a CloudFormation template",
+              text: "Does the data protection solution provide a CloudFormation template to automate the deployment of all necessary components and IAM roles in your AWS account, minimizing the risk of human error and allowing for easy modification as new services are supported?",
               weight: 3,
             },
             {
               id: "3.10",
-              text: "As additional workloads are supported by the data protection solution, adding support in the user account is a simple update to the CloudFormation template",
+              text: "Does the data protection solution allow you to leverage your own S3 bucket for backup storage, breaking away from the pre-defined storage tiering and allowing you to take advantage of cost optimzed tiers like S3 Galcier?",
               weight: 3,
             },
             {
               id: "3.11",
-              text: "Ephmemeral compute resources are centrally deployed by the data protection solution, leveraging elastic Kuberenetes service",
+              text: "Does the data protection solution leverage a centralized ephemeral compute engine to index backups and generate hashes, minimizing complexity, enhancing security, and keeping costs under control?",
               weight: 3,
             },
             {
               id: "3.12",
-              text: "Restoration of EC2 or RDS instances can be done across regions, accounts or organizations",
+              text: "Does the data protection solution allow you to restore cross-region, cross-account, cross-organization, or any combination thereof?",
               weight: 3,
             },
             {
               id: "3.13",
-              text: "Scan and index all objects in protected S3 buckets, providing for granular file/object level recovery",
-              weight: 3,
-            },
-            {
-              id: "3.14",
-              text: "Data protection solution provides single interface to protect EC2, RDS, S3, EKS, FSxW, FSxN and VMC-A workloads",
+              text: "Does the data protection solution allow the scanning, indexing and protection of petabytes of S3 data without the need to first move it to a separate backup appliance?",
               weight: 3,
             },
           ],
         },
         {
           name: "Azure",
-          questions: [],
+          questions: [
+            {
+              id: "3.14",
+              text: "Does the data protection solution allow you to store backups in a separate Azure subscription or tenant that you control, ensuring that even if your primary subscription is compromised, your backup data remains safe?",
+              weight: 3,
+            },
+            {
+              id: "3.15",
+              text: "Does the data protection solution provide an ARM template to automate the deployment of all necessary components and roles in your Azure subscription, minimizing the risk of human error and allowing for easy modification as new services are supported?",
+              weight: 3,
+            },
+            {
+              id: "3.16",
+              text: "Does the data protection solution allow you to leverage your own Azure Blob Storage account for backup storage, breaking away from the pre-defined storage tiering and allowing you to take advantage of cost optimzed tiers like Cool and Archive?",
+              weight: 3,
+            },
+            {
+              id: "3.17",
+              text: "Does the data protection solution leverage a centralized ephemeral compute engine to index backups and generate hashes, minimizing complexity, enhancing security, and keeping costs under control?",
+              weight: 3,
+            },
+            {
+              id: "3.18",
+              text: "Does the data protection solution allow you to restore cross-region, cross-subscription, cross-tenant, or any combination thereof?",
+              weight: 3,
+            },
+            {
+              id: "3.19",
+              text: "Does the data protection solution allow the scanning, indexing and protection of petabytes of Azure Blob data without the need to first move it to a separate backup appliance?",
+              weight: 3,
+            },
+            {
+              id: "3.20",
+              text: "Does the data protection solution allow you to restore files and folders from protected Azure VMs without first having to restore to an Azure storage account?",
+              weight: 3,
+            },
+          ],
         },
         {
           name: "GCP",
@@ -296,34 +332,105 @@ export const scorecardData = {
           questions: [
             {
               id: "4.01",
-              text: "Data protection solution requires no infrastructure be deployed to protect Microsoft 365 data",
+              text: "Is the Microsoft 365 data protected with a third-party tool or is the organization relying on Microsoft's recycle bin and legal hold to preserve data?",
               weight: 3,
             },
             {
               id: "4.02",
-              text: "Data protection solution air-gaps data away from Microsoft tenant, ensuring survivability of data in case of a tenant issue",
+              text: "Does the data protection solution allow you to logically air-gap your M365 data away, outside of your M365 tenant?",
               weight: 3,
             },
             {
               id: "4.03",
-              text: "Customers can optionally utilize their own encryption keys, ensuring the security of their M365 backup data. Customers are able to rotate and invalidate keys at will",
+              text: "Does the data protection solution allow you to bring your own encryption key, allowing for seamless key rotation and ensuring that you can remove access to the data whenever you require?",
               weight: 3,
             },
             {
               id: "4.04",
-              text: "Data protection solution leverages Microsoft best practices in interfacing with the M365 graph API, intelligently backing off, to achieve the highest possible performance without throttling",
+              text: "Does the data protection solution allow for granular recovery of email, calendar items, Sharepoint site, OneDrive files, or Teams chats, without needing to restore the entire item, empowered by a 'Google-like' search?",
               weight: 3,
             },
             {
               id: "4.05",
-              text: 'File indexing enabling a "Google-like" search for file and folder level recovery',
+              text: 'Does the data protection solution automatically discover and protect new users, sites, and channels without needing manual configuration?',
+              weight: 3,
+            },
+            {
+              id: "4.06",
+              text: "Does the data protection solution allow for export of data in native formats (e.g. PST, EML, MSG) directly from the backup without needing to first restore?",
+              weight: 3,
+            },
+            {
+              id: "4.07",
+              text: "Does the data protection solution provide legal hold capabilities with immutable compliance copies for M365 data?",
+              weight: 3,
+            },
+            {
+              id: "4.08",
+              text: "Does the data protection solution include comprehensive Teams data protection including private channels, chat history and file attachments?",
+              weight: 3,
+            },
+            {
+              id: "4.09",
+              text: "Does the data protection solution provide an interface where users self-service their own restore operations?",
+              weight: 3,
+            },
+            {
+              id: "4.10",
+              text: "Does the data protection solution provide the ability to orchestrate recovery so that capstone users and their most-recent data is recovered first, allowing them to get back to business quicket?",
+              weight: 3,
+            },
+            {
+              id: "4.11",
+              text: "Does the data protection solution provide a single admin interface, allowing backup admins to see across the entire data estate, including M365 data?",
               weight: 3,
             },
           ],
         },
         {
           name: "Salesforce",
-          questions: [],
+          questions: [
+            {
+              id: "4.12",
+              text: "The data protection solution captures and protects metadaa, configuration and customizations alongside data?",
+              weight: 3,
+            },
+            {
+              id: "4.13",
+              text: "The data protection solution allows you to perform point-in-time recovery of Salesforce data to any specific moment within your retention period?",
+              weight: 3,
+            },
+            {
+              id: "4.14",
+              text: "The data protection solutions prodivdes the ability to automatically take daily backups without impacting org performance",
+              weight: 3,
+            },
+            {
+              id: "4.15",
+              text: "The data protection solution allows you to restore to a sandbox environment for testing and development purposes?",
+              weight: 3,
+            },
+            {
+              id: "4.16",
+              text: "The data protection solution is able to capture all custom objects, fields and relationship data?",
+              weight: 3,
+            },
+            {
+              id: "4.17",
+              text: "The data protection solution allows you to compare Salesforce configurations between different snapshots, as well as against the live environment, determining the impact to a restoration operation?",
+              weight: 3,
+            },
+            {
+              id: "4.18",
+              text: "The data protection solution provides granular recovery options, allowing restoration of individual records or fields?",
+              weight: 3,
+            },
+            {
+              id: "4.19",
+              text: "The Salesforce backup data is stored outside of Salesforce Infrastructure, providing true air-gap protection?",
+              weight: 4,
+            },
+          ],
         },
         {
           name: "Jira",
@@ -331,7 +438,48 @@ export const scorecardData = {
         },
         {
           name: "Dynamics 365",
-          questions: [],
+          questions: [
+            {
+              id: "4.20",
+              text: "The data protection solution protects both data and customizations including workflows, business rules and forms?",
+              weight: 3,
+            },
+            {
+              id: "4.21",
+              text: "The data protection solution performs automated daily backups of Dynamics 365 without requiring export jobs or manual interventions?",
+              weight: 3,
+            },
+            {
+              id: "4.22",
+              text: "The data protection solution can restore Dynamics 365 data to different environments (e.g. production, sandbox, etc.)?",
+              weight: 3,
+            },
+            {
+              id: "4.23",
+              text: "The data protection solution includes system settings, security roles, and user permissions?",
+              weight: 3,
+            },
+            {
+              id: "4.24",
+              text: "The data protection solution provides granular recovery options allowing restoration of specific entities or records?",
+              weight: 3,
+            },
+            {
+              id: "4.25",
+              text: "The data protection solution stores the Dynamics 365 backup data indepenantly from Microsoft's infrastructure, in an immutable format?",
+              weight: 3,
+            },
+            {
+              id: "4.26",
+              text: "The data protection solution provides detailed audit logs of all Dynamics 365 backup and recovery operations?",
+              weight: 3,
+            },
+            {
+              id: "4.27",
+              text: "The data protection solutions provides an easy-to-use, single Admin user interface to configure protection across the data estate, including Dynamics 365?",
+              weight: 4,
+            },
+          ],
         },
       ],
     },
