@@ -6,19 +6,166 @@
 const EMAIL_REGEX =
   /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
 
+// List of personal email domains that should be blocked
+const PERSONAL_EMAIL_DOMAINS = [
+  'gmail.com',
+  'yahoo.com',
+  'yahoo.co.uk',
+  'yahoo.fr',
+  'yahoo.de',
+  'yahoo.es',
+  'yahoo.it',
+  'yahoo.ca',
+  'yahoo.com.br',
+  'yahoo.in',
+  'yahoo.jp',
+  'yahoo.com.au',
+  'outlook.com',
+  'hotmail.com',
+  'hotmail.co.uk',
+  'hotmail.fr',
+  'hotmail.de',
+  'hotmail.es',
+  'hotmail.it',
+  'live.com',
+  'msn.com',
+  'proton.com',
+  'proton.me',
+  'protonmail.com',
+  'protonmail.ch',
+  'pm.me',
+  'icloud.com',
+  'me.com',
+  'mac.com',
+  'aol.com',
+  'aim.com',
+  'zoho.com',
+  'yandex.com',
+  'yandex.ru',
+  'mail.com',
+  'gmx.com',
+  'gmx.net',
+  'gmx.de',
+  'fastmail.com',
+  'fastmail.fm',
+  'tutanota.com',
+  'tutanota.de',
+  'tuta.com',
+  'mail.ru',
+  'inbox.com',
+  'zohomail.com',
+  'qq.com',
+  '163.com',
+  '126.com',
+  'sina.com',
+  'rediffmail.com',
+  'rocketmail.com',
+  'optonline.net',
+  'comcast.net',
+  'verizon.net',
+  'att.net',
+  'sbcglobal.net',
+  'bellsouth.net',
+  'cox.net',
+  'earthlink.net',
+  'charter.net',
+  'shaw.ca',
+  'rogers.com',
+  'sympatico.ca',
+  'btinternet.com',
+  'virginmedia.com',
+  'sky.com',
+  'talktalk.net',
+  'tiscali.co.uk',
+  'btopenworld.com',
+  'orange.fr',
+  'wanadoo.fr',
+  'free.fr',
+  'laposte.net',
+  'sfr.fr',
+  'neuf.fr',
+  'gmx.fr',
+  'web.de',
+  't-online.de',
+  'arcor.de',
+  'freenet.de',
+  'libero.it',
+  'virgilio.it',
+  'alice.it',
+  'tin.it',
+  'email.it',
+  'tiscali.it',
+  'fastwebnet.it',
+  'terra.es',
+  'telefonica.net',
+  'ya.ru',
+  'rambler.ru',
+  'list.ru',
+  'bk.ru',
+  'inbox.ru',
+  'mail.bg',
+  'abv.bg',
+  'dir.bg',
+  'seznam.cz',
+  'centrum.cz',
+  'atlas.cz',
+  'volny.cz',
+  'wp.pl',
+  'o2.pl',
+  'interia.pl',
+  'onet.pl',
+  'gazeta.pl',
+  'op.pl',
+  'vp.pl',
+  'tlen.pl',
+  'poczta.fm',
+  'freemail.hu',
+  'citromail.hu',
+  'mailbox.org',
+  'posteo.de',
+  'runbox.com',
+  'countermail.com',
+  'hushmail.com',
+  'disroot.org',
+  'riseup.net',
+  'autistici.org',
+  'inventati.org',
+  'duck.com',
+  'duckduckgo.com'
+];
+
+/**
+ * Checks if an email domain is a personal email provider
+ * @param {string} email - The email string to check
+ * @returns {boolean} - true if the email is from a personal provider
+ */
+export const isPersonalEmail = (email) => {
+  if (!email || typeof email !== 'string') {
+    return false;
+  }
+  
+  const domain = email.toLowerCase().split('@')[1];
+  if (!domain) {
+    return false;
+  }
+  
+  return PERSONAL_EMAIL_DOMAINS.includes(domain);
+};
+
 /**
  * Validates and sanitizes email input
  * @param {string} email - The email string to validate
- * @returns {Object} - {isValid: boolean, sanitized: string, errors: string[]}
+ * @returns {Object} - {isValid: boolean, sanitized: string, errors: string[], warnings: string[]}
  */
 export const validateEmail = (email) => {
   const errors = [];
+  const warnings = [];
   let sanitized = "";
 
   // Basic type checking
   if (typeof email !== "string") {
     errors.push("Email must be a string");
-    return { isValid: false, sanitized: "", errors };
+    return { isValid: false, sanitized: "", errors, warnings };
   }
 
   // Remove leading/trailing whitespace
@@ -27,13 +174,13 @@ export const validateEmail = (email) => {
   // Check for empty string
   if (!sanitized) {
     errors.push("Email cannot be empty");
-    return { isValid: false, sanitized: "", errors };
+    return { isValid: false, sanitized: "", errors, warnings };
   }
 
   // Check length (reasonable limits)
   if (sanitized.length > 254) {
     errors.push("Email is too long (max 254 characters)");
-    return { isValid: false, sanitized: "", errors };
+    return { isValid: false, sanitized: "", errors, warnings };
   }
 
   // Check for common patterns that indicate invalid email
@@ -55,6 +202,12 @@ export const validateEmail = (email) => {
     errors.push("Email format is invalid");
   }
 
+  // Check for personal email domains
+  if (errors.length === 0 && isPersonalEmail(sanitized)) {
+    errors.push("Please use your company email address, not a personal email");
+    warnings.push("Personal email domains (Gmail, Yahoo, Outlook, etc.) are not accepted");
+  }
+
   // Additional security checks
   if (
     sanitized.includes("<script") ||
@@ -68,6 +221,7 @@ export const validateEmail = (email) => {
     isValid: errors.length === 0,
     sanitized: sanitized.toLowerCase(), // Normalize to lowercase for consistency
     errors,
+    warnings,
   };
 };
 

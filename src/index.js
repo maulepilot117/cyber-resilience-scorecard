@@ -1,12 +1,12 @@
 // src/index.js
 import React from "react";
 import ReactDOM from "react-dom";
-import CyberResilienceScorecardRefactored from "./CyberResilienceScorecardRefactored";
+import CyberResilienceScorecard from "./CyberResilienceScorecard";
 import "./index.css";
 
 ReactDOM.render(
   <React.StrictMode>
-    <CyberResilienceScorecardRefactored />
+    <CyberResilienceScorecard />
   </React.StrictMode>,
   document.getElementById("root"),
 );

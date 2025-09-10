@@ -130,10 +130,17 @@ const CyberResilienceScorecard = () => {
   };
 
   const handleEmailSubmit = () => {
-    if (DEMO_MODE || validateEmail(email)) {
+    if (DEMO_MODE) {
+      setCurrentStep(0);
+      return;
+    }
+    
+    const validation = validateEmail(email);
+    if (validation.isValid) {
       setCurrentStep(0);
     } else {
-      alert("Please enter a valid email address.");
+      // The EmailStep component now handles showing validation errors
+      // so we don't need an alert here
     }
   };
 
