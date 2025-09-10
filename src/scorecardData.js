@@ -553,7 +553,7 @@ export const scorecardData = {
           weight: 4,
         },
         {
-          id: "5.03",
+          id: "6.03",
           text: "Rapidly hunt for indicators of compromise via YARA rules and file hashes in 60 seconds to identify the clean point of recovery",
           weight: 4,
         },

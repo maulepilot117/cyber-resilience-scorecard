@@ -18,8 +18,9 @@ export const getAllQuestions = (selectedSubCategories = null) => {
       selectedSubCategories &&
       selectedSubCategories.some((key) => key.startsWith(`${category.name}:`));
 
-    // Always include Backup Architecture questions, or include if category has selected subcategories
-    if (category.name === "Backup Architecture" || !selectedSubCategories || categoryHasSelectedSubCategories) {
+    // Always include Backup Architecture and Cyber Tools questions, or include if category has selected subcategories
+    const alwaysIncludedCategories = ["Backup Architecture", "Cyber Tools"];
+    if (alwaysIncludedCategories.includes(category.name) || !selectedSubCategories || categoryHasSelectedSubCategories) {
       if (
         !processedCategories.has(category.name) &&
         category.questions &&
@@ -73,16 +74,28 @@ export const getAllQuestions = (selectedSubCategories = null) => {
     }
   });
 
+  // Sort questions by their ID to maintain consistent ordering
   return questions.sort((a, b) => {
-    if (a.category !== b.category) {
-      return a.category.localeCompare(b.category);
+    // Extract numeric parts from IDs for proper numerical sorting
+    const getNumericId = (id) => {
+      const parts = id.split('.');
+      return parts.map(part => parseInt(part, 10));
+    };
+    
+    const aIdParts = getNumericId(a.id);
+    const bIdParts = getNumericId(b.id);
+    
+    // Compare each part of the ID
+    for (let i = 0; i < Math.max(aIdParts.length, bIdParts.length); i++) {
+      const aPart = aIdParts[i] || 0;
+      const bPart = bIdParts[i] || 0;
+      
+      if (aPart !== bPart) {
+        return aPart - bPart;
+      }
     }
-    if (!a.subCategory && b.subCategory) return -1;
-    if (a.subCategory && !b.subCategory) return 1;
-    if (a.subCategory && b.subCategory && a.subCategory !== b.subCategory) {
-      return a.subCategory.localeCompare(b.subCategory);
-    }
-    return a.id.localeCompare(b.id);
+    
+    return 0;
   });
 };
 
