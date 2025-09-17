@@ -5,7 +5,7 @@
  * expected by the current app, allowing gradual migration
  */
 
-import { questions, categories, subcategories } from './scorecardDataV2';
+import { questions, categories, subcategories } from './scorecardDataV2.js';
 
 /**
  * Convert V2 structure to V1 format for compatibility

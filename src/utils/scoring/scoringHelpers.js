@@ -1,4 +1,4 @@
-import { scorecardData } from '../../scorecardData';
+import { scorecardDataV2Compatible as scorecardData } from "../../scorecardDataAdapter";
 import { postData, ApiError } from '../apiUtils';
 import { getDetailedReportContent } from './reportDescriptions';
 

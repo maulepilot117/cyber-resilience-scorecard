@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { scorecardData } from "./scorecardData";
+import { scorecardDataV2Compatible as scorecardData } from "./scorecardDataAdapter";
 import { validateEmail, sanitizeString } from "./utils/validationUtils";
 import { calculateAndSubmitScore } from "./utils/scoring/scoringHelpers";
 import { getAllQuestions, getQuestionSubset } from "./utils/questionHelpers";
@@ -273,7 +273,7 @@ const CyberResilienceScorecard = () => {
         />
 
         {/* Main Content Area */}
-        <div className="relative h-[600px]">
+        <div className="relative min-h-[500px] h-[600px] max-h-[90vh]">
           {/* Intro Step */}
           {currentStep === -3 && (
             <IntroStep handleContinueFromIntro={handleContinueFromIntro} />

@@ -1,6 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronDown, ChevronUp, Check } from 'lucide-react';
-import { scorecardData } from '../scorecardData';
+import { scorecardDataV2Compatible as scorecardData } from "../scorecardDataAdapter";
 
 const CategorySelection = ({
   selectedSubCategories,
